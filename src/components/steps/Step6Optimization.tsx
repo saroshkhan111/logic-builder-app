@@ -61,7 +61,7 @@ export const Step6Optimization = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Optimization Rules with CRUD */}
           <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-4">
             <div className="flex items-center gap-2 text-indigo-400 font-semibold text-xs">
@@ -73,7 +73,7 @@ export const Step6Optimization = () => {
                 value={ruleInput}
                 onChange={(e) => setRuleInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddRule()}
-                placeholder="e.g. Replace repeated code with functions"
+                placeholder="e.g. Use list comprehension for speed"
                 className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
               />
               <button

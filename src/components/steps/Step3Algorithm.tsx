@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Check, Edit2, GitBranch, Plus, Sparkles, Terminal, Trash2, X } from "lucide-react";
 import { useState } from "react";
@@ -69,7 +69,7 @@ export const Step3Algorithm = () => {
                 value={pseudoInput}
                 onChange={(e) => setPseudoInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddPseudo()}
-                placeholder="e.g. Display the result"
+                placeholder="e.g. Initialize score to 0"
                 className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
               />
               <button

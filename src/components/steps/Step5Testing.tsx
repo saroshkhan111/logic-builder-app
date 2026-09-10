@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { Check, CheckCircle2, Clock, Play, Plus, Trash2, X, XCircle } from "lucide-react";
+import { Check, CheckCircle2, Clock, Edit2, Play, Plus, Trash2, X, XCircle } from "lucide-react";
 import { useState } from "react";
 
 import { runPythonCode } from "@/lib/pyodide/runner";
@@ -101,7 +101,7 @@ else:
               type="text"
               value={newTestCase.name}
               onChange={(e) => setNewTestCase({ ...newTestCase, name: e.target.value })}
-              placeholder="e.g. Negative number test"
+              placeholder="e.g. Test Input: 85, Expected: Passed"
               className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
             />
             <input
@@ -225,7 +225,7 @@ else:
                             className="text-cyan-400 hover:text-white p-1 cursor-pointer transition-colors"
                             title="Edit Test Case"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => removeTestCase(tc.id)}
