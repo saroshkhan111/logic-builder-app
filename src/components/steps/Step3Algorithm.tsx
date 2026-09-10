@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Edit2, GitBranch, Plus, Sparkles, Terminal, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import FlowChart from "@/components/flow/FlowChart";
 import { parseAlgorithm } from "@/lib/algorithmParser";
@@ -13,6 +13,7 @@ export const Step3Algorithm = () => {
     algorithm,
     setAlgorithm,
     pseudocodeSteps,
+    setPseudocodeSteps,
     addPseudocodeStep,
     updatePseudocodeStep,
     removePseudocodeStep,
@@ -22,10 +23,47 @@ export const Step3Algorithm = () => {
   const [editingPseudoIdx, setEditingPseudoIdx] = useState<number | null>(null);
   const [editPseudoValue, setEditPseudoValue] = useState("");
 
+  // Auto-resize textarea ref + effect
+  const algorithmTextareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = algorithmTextareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [algorithm]);
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setAlgorithm(text);
+    const steps = text.split("\n").filter((line) => line.trim() !== "");
+    setPseudocodeSteps(steps);
+  };
+
   const handleAddPseudo = () => {
     if (!pseudoInput.trim()) return;
-    addPseudocodeStep(pseudoInput.trim());
+    const trimmed = pseudoInput.trim();
+    addPseudocodeStep(trimmed);
+    const updatedSteps = [...pseudocodeSteps, trimmed];
+    setAlgorithm(updatedSteps.join("\n"));
     setPseudoInput("");
+  };
+
+  const handleSavePseudoEdit = (index: number) => {
+    if (editPseudoValue.trim()) {
+      const trimmed = editPseudoValue.trim();
+      updatePseudocodeStep(index, trimmed);
+      const updatedSteps = pseudocodeSteps.map((item, i) =>
+        i === index ? trimmed : item
+      );
+      setAlgorithm(updatedSteps.join("\n"));
+    }
+    setEditingPseudoIdx(null);
+  };
+
+  const handleRemovePseudo = (index: number) => {
+    removePseudocodeStep(index);
+    const updatedSteps = pseudocodeSteps.filter((_, i) => i !== index);
+    setAlgorithm(updatedSteps.join("\n"));
   };
 
   return (
@@ -51,10 +89,11 @@ export const Step3Algorithm = () => {
               <Terminal className="w-4 h-4" /> 1. Algorithm Writer
             </div>
             <textarea
+              ref={algorithmTextareaRef}
               value={algorithm}
-              onChange={(e) => setAlgorithm(e.target.value)}
+              onChange={handleTextareaChange}
               placeholder={"START\n1. Create two variables.\n2. Assign them hardcoded values.\n3. INPUT a and b\n4. IF a > b\n5. Compute a + b\n6. DISPLAY result\nEND"}
-              className="w-full h-48 bg-slate-900 border border-slate-800 rounded-lg p-3 font-mono text-xs text-emerald-400 focus:outline-none focus:border-indigo-500 resize-y leading-relaxed"
+              className="w-full min-h-[100px] bg-slate-900 border border-slate-800 rounded-lg p-3 font-mono text-xs text-emerald-400 focus:outline-none focus:border-indigo-500 resize-none overflow-hidden leading-relaxed"
             />
           </div>
 
@@ -94,12 +133,7 @@ export const Step3Algorithm = () => {
                       className="bg-transparent text-slate-100 text-xs focus:outline-none px-1 flex-1"
                     />
                     <button
-                      onClick={() => {
-                        if (editPseudoValue.trim()) {
-                          updatePseudocodeStep(idx, editPseudoValue.trim());
-                        }
-                        setEditingPseudoIdx(null);
-                      }}
+                      onClick={() => handleSavePseudoEdit(idx)}
                       className="text-emerald-400 hover:text-emerald-300 p-0.5 cursor-pointer"
                     >
                       <Check className="w-3.5 h-3.5" />
@@ -129,7 +163,7 @@ export const Step3Algorithm = () => {
                       <Edit2 className="w-3 h-3" />
                     </button>
                     <button
-                      onClick={() => removePseudocodeStep(idx)}
+                      onClick={() => handleRemovePseudo(idx)}
                       className="text-sky-400 hover:text-rose-400 transition-colors cursor-pointer"
                       title="Delete Step"
                     >
@@ -153,7 +187,7 @@ export const Step3Algorithm = () => {
                 <span>Decision</span>
               </div>
             </div>
-            <FlowChart nodes={parseAlgorithm(algorithm)} />
+            <FlowChart nodes={parseAlgorithm(pseudocodeSteps.join("\n"))} />
           </div>
         </div>
 

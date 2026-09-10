@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { Check, CheckCircle2, Clock, Edit2, Play, Plus, Trash2, X, XCircle } from "lucide-react";
+import { Check, CheckCircle2, Clock, Edit2, Play, Plus, Trash2, Wand2, X, XCircle } from "lucide-react";
 import { useState } from "react";
 
 import { runPythonCode } from "@/lib/pyodide/runner";
@@ -9,6 +9,9 @@ import { useLogicFlowStore } from "@/store/logicFlowStore";
 export const Step5Testing = () => {
   const {
     setCurrentStep,
+    problemStatement,
+    inputs,
+    outputs,
     testCases,
     addTestCase,
     updateTestCase,
@@ -21,6 +24,7 @@ export const Step5Testing = () => {
   const [newTestCase, setNewTestCase] = useState({ name: "", input: "", expectedOutput: "" });
   const [editingTcId, setEditingTcId] = useState<string | null>(null);
   const [editTcValues, setEditTcValues] = useState({ name: "", input: "", expectedOutput: "" });
+  const [autoGenWarning, setAutoGenWarning] = useState("");
 
   const handleAddTestCase = () => {
     if (!newTestCase.name.trim() || !newTestCase.input.trim() || !newTestCase.expectedOutput.trim()) return;
@@ -43,6 +47,72 @@ export const Step5Testing = () => {
       });
     }
     setEditingTcId(null);
+  };
+
+  const handleAutoGenerateTestCases = () => {
+    if (inputs.length === 0) {
+      setAutoGenWarning("Please fill Step 1 Inputs & Conditions first to auto-generate test cases.");
+      setTimeout(() => setAutoGenWarning(""), 4000);
+      return;
+    }
+
+    setAutoGenWarning("");
+
+    const firstOutput = outputs.length > 0 ? outputs[0] : "Expected";
+
+    const parseInput = (input: string) => {
+      const match = input.match(/^(\w+)/);
+      return match ? match[1] : input;
+    };
+
+    const isNumeric = (input: string) => /number|integer|int|float|digit/i.test(input);
+    const isBoolean = (input: string) => /bool|boolean|flag/i.test(input);
+
+    const generateValues = (mode: "standard" | "boundary" | "edge"): string => {
+      const parts = inputs.map((inp) => {
+        const name = parseInput(inp);
+        if (isBoolean(inp)) {
+          if (mode === "standard") return `${name}=True`;
+          return `${name}=False`;
+        }
+        if (isNumeric(inp)) {
+          if (mode === "standard") return `${name}=10`;
+          if (mode === "boundary") return `${name}=0`;
+          return `${name}=-1`;
+        }
+        // string type
+        if (mode === "standard") return `${name}=Hello`;
+        if (mode === "boundary") return `${name}=A`;
+        return `${name}=`;
+      });
+      return parts.join(", ");
+    };
+
+    const generated = [
+      {
+        id: `tc-auto-${Date.now()}-1`,
+        name: "Standard Case",
+        input: generateValues("standard"),
+        expectedOutput: firstOutput,
+        status: "PENDING" as const,
+      },
+      {
+        id: `tc-auto-${Date.now()}-2`,
+        name: "Boundary Case",
+        input: generateValues("boundary"),
+        expectedOutput: firstOutput,
+        status: "PENDING" as const,
+      },
+      {
+        id: `tc-auto-${Date.now()}-3`,
+        name: "Edge Case",
+        input: generateValues("edge"),
+        expectedOutput: firstOutput,
+        status: "PENDING" as const,
+      },
+    ];
+
+    generated.forEach((tc) => addTestCase(tc));
   };
 
   const handleRunTests = async () => {
@@ -83,51 +153,85 @@ else:
               Execute your logic with normal, boundary, and edge test cases to verify correctness.
             </p>
           </div>
-          <button
-            onClick={handleRunTests}
-            disabled={isTesting}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
-          >
-            <Play className="w-4 h-4 fill-current" />
-            {isTesting ? "Running..." : "Run Test Suite"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleAutoGenerateTestCases}
+              className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+            >
+              <Wand2 className="w-4 h-4" />
+              Auto-Generate Test Cases
+            </button>
+            <button
+              onClick={handleRunTests}
+              disabled={isTesting}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              {isTesting ? "Running..." : "Run Test Suite"}
+            </button>
+          </div>
         </div>
+
+        {/* Auto-Gen Warning */}
+        {autoGenWarning && (
+          <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">
+            <XCircle className="w-3.5 h-3.5 shrink-0" />
+            {autoGenWarning}
+          </div>
+        )}
 
         {/* Add New Test Case Form */}
         <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
           <label className="text-xs font-semibold text-slate-300 block">Add New Test Case</label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <input
-              type="text"
-              value={newTestCase.name}
-              onChange={(e) => setNewTestCase({ ...newTestCase, name: e.target.value })}
-              placeholder="e.g. Test Input: 85, Expected: Passed"
-              className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-            />
-            <input
-              type="text"
-              value={newTestCase.input}
-              onChange={(e) => setNewTestCase({ ...newTestCase, input: e.target.value })}
-              placeholder="e.g. -5"
-              className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-            />
-            <input
-              type="text"
-              value={newTestCase.expectedOutput}
-              onChange={(e) => setNewTestCase({ ...newTestCase, expectedOutput: e.target.value })}
-              placeholder="e.g. Odd"
-              className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Test Name</label>
+              <input
+                type="text"
+                value={newTestCase.name}
+                onChange={(e) => setNewTestCase({ ...newTestCase, name: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && handleAddTestCase()}
+                placeholder="e.g. Peak Hour Ride"
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Input Parameters</label>
+              <input
+                type="text"
+                value={newTestCase.input}
+                onChange={(e) => setNewTestCase({ ...newTestCase, input: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && handleAddTestCase()}
+                placeholder="e.g. distance=5, duration=15, peak=True"
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Expected Output</label>
+              <input
+                type="text"
+                value={newTestCase.expectedOutput}
+                onChange={(e) => setNewTestCase({ ...newTestCase, expectedOutput: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && handleAddTestCase()}
+                placeholder="e.g. 275.0"
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
           </div>
           <button
             onClick={handleAddTestCase}
-            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+            className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Add Test Case
           </button>
         </div>
 
         {/* Test Cases Table */}
+        {testCases.length === 0 ? (
+          <div className="flex items-center justify-center h-40 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-950/40 text-center">
+            No test cases yet. Add your first test case above to get started.
+          </div>
+        ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -243,6 +347,7 @@ else:
             </tbody>
           </table>
         </div>
+        )}
 
         {/* Navigation */}
         <div className="flex justify-between pt-2">

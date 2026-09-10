@@ -48,6 +48,7 @@ interface LogicFlowState {
   algorithm: string;
   setAlgorithm: (code: string) => void;
   pseudocodeSteps: string[];
+  setPseudocodeSteps: (steps: string[]) => void;
   addPseudocodeStep: (item: string) => void;
   updatePseudocodeStep: (index: number, value: string) => void;
   removePseudocodeStep: (index: number) => void;
@@ -171,6 +172,7 @@ export const useLogicFlowStore = create<LogicFlowState>((set) => ({
   algorithm: "",
   setAlgorithm: (code) => set({ algorithm: code }),
   pseudocodeSteps: [],
+  setPseudocodeSteps: (steps) => set({ pseudocodeSteps: steps }),
   addPseudocodeStep: (item) =>
     set((state) => ({ pseudocodeSteps: [...state.pseudocodeSteps, item] })),
   updatePseudocodeStep: (index, value) =>
@@ -204,22 +206,7 @@ export const useLogicFlowStore = create<LogicFlowState>((set) => ({
     })),
 
   // Step 5 - Testing
-  testCases: [
-    {
-      id: "tc-1",
-      name: "Standard Even Test",
-      input: "4",
-      expectedOutput: "Even",
-      status: "PENDING",
-    },
-    {
-      id: "tc-2",
-      name: "Standard Odd Test",
-      input: "7",
-      expectedOutput: "Odd",
-      status: "PENDING",
-    },
-  ],
+  testCases: [],
   isTesting: false,
   addTestCase: (testCase) =>
     set((state) => ({ testCases: [...state.testCases, testCase] })),

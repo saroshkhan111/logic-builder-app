@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, Check, Edit2, Plus, Trash2, X } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { useLogicFlowStore } from "@/store/logicFlowStore";
 
@@ -38,6 +38,15 @@ export const Step1Problem = ({ onNext }: Step1Props) => {
 
   const [editingOutputIdx, setEditingOutputIdx] = useState<number | null>(null);
   const [editOutputValue, setEditOutputValue] = useState("");
+
+  // Auto-resize textarea ref + effect
+  const problemTextareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = problemTextareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [problemStatement]);
 
   const handleAddInput = () => {
     if (!inputVal.trim()) return;
@@ -99,10 +108,11 @@ export const Step1Problem = ({ onNext }: Step1Props) => {
             What is the problem you want to solve?
           </label>
           <textarea
+            ref={problemTextareaRef}
             value={problemStatement}
             onChange={(e) => setProblemStatement(e.target.value)}
             placeholder="Example: Write a program that takes an integer and checks if it is Even or Odd..."
-            className="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 min-h-25 resize-y"
+            className="w-full min-h-[100px] bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none overflow-hidden leading-relaxed"
           />
         </div>
 
