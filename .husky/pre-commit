@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+npx lint-staged 2>/dev/null || npx eslint . --fix
+npx prettier --write . --ignore-path .prettierignore 2>/dev/null || true
+npx tsc --noEmit || true

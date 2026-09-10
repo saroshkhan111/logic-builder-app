@@ -1,0 +1,38 @@
+[project]
+name = "logic-builder-engine"
+version = "0.1.0"
+description = "Python tooling & execution engine for logic-builder-app: validation engines, PEP 8 parsing, and FastAPI services."
+readme = "python_engine/README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.9",
+    "uvicorn[standard]>=0.32",
+]
+
+[dependency-groups]
+dev = [
+    "black>=24.10",
+    "flake8>=7.1",
+    "httpx2>=0.1",
+    "pytest>=8.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["python_engine/core", "python_engine/api"]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.pytest.ini_options]
+testpaths = ["python_engine/tests"]
+pythonpath = ["."]
+
+[tool.flake8]
+max-line-length = 88
+extend-exclude = [".venv", ".git", "__pycache__"]
