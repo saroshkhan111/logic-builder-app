@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 import type { LogicEdge, LogicNode } from "@/types/flow";
 
@@ -29,6 +30,10 @@ interface LogicFlowState {
   addOutputItem: (output: string) => void;
   updateOutputItem: (index: number, value: string) => void;
   removeOutputItem: (index: number) => void;
+  rules: string[];
+  addRule: (item: string) => void;
+  updateRule: (index: number, value: string) => void;
+  removeRule: (index: number) => void;
 
   // Step 2 - Requirements
   requiredData: string[];
@@ -96,7 +101,9 @@ interface LogicFlowState {
   reset: () => void;
 }
 
-export const useLogicFlowStore = create<LogicFlowState>((set) => ({
+export const useLogicFlowStore = create<LogicFlowState>()(
+  persist(
+    (set) => ({
   // Navigation
   currentStep: 1,
   setCurrentStep: (step) => set({ currentStep: step }),
@@ -125,6 +132,19 @@ export const useLogicFlowStore = create<LogicFlowState>((set) => ({
   removeOutputItem: (index) =>
     set((state) => ({
       outputs: state.outputs.filter((_, i) => i !== index),
+    })),
+  rules: [],
+  addRule: (item) =>
+    set((state) => ({ rules: [...state.rules, item] })),
+  updateRule: (index, value) =>
+    set((state) => ({
+      rules: state.rules.map((item, i) =>
+        i === index ? value : item
+      ),
+    })),
+  removeRule: (index) =>
+    set((state) => ({
+      rules: state.rules.filter((_, i) => i !== index),
     })),
 
   // Step 2 - Requirements
@@ -279,6 +299,7 @@ export const useLogicFlowStore = create<LogicFlowState>((set) => ({
       problemStatement: "",
       inputs: [],
       outputs: [],
+      rules: [],
       requiredData: [],
       toolsFunctions: [],
       logicalConcepts: [],
@@ -294,6 +315,11 @@ export const useLogicFlowStore = create<LogicFlowState>((set) => ({
       edges: [],
       activeNodeId: null,
     }),
-}));
+    }),
+    {
+      name: 'logic-builder-storage',
+    },
+  ),
+);
 
 export type { LogicFlowState };

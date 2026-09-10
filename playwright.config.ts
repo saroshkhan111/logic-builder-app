@@ -12,7 +12,6 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3000",
     headless: false,
-    slowMo: 1000,
     viewport: { width: 1440, height: 900 },
     screenshot: "only-on-failure",
     trace: "on-first-retry",

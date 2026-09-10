@@ -21,11 +21,12 @@ export const Step1Problem = ({ onNext }: Step1Props) => {
     addOutputItem,
     updateOutputItem,
     removeOutputItem,
-    // Add these to logicFlowStore if using store actions
+    rules,
+    addRule,
+    updateRule,
+    removeRule,
   } = useLogicFlowStore();
 
-  // Local state fallback for Conditions/Rules if not yet in store
-  const [rules, setRules] = useState<string[]>([]);
   const [ruleVal, setRuleVal] = useState("");
   const [editingRuleIdx, setEditingRuleIdx] = useState<number | null>(null);
   const [editRuleValue, setEditRuleValue] = useState("");
@@ -62,19 +63,19 @@ export const Step1Problem = ({ onNext }: Step1Props) => {
 
   const handleAddRule = () => {
     if (!ruleVal.trim()) return;
-    setRules([...rules, ruleVal.trim()]);
+    addRule(ruleVal.trim());
     setRuleVal("");
   };
 
   const handleSaveRuleEdit = (index: number) => {
     if (editRuleValue.trim()) {
-      setRules(rules.map((r, i) => (i === index ? editRuleValue.trim() : r)));
+      updateRule(index, editRuleValue.trim());
     }
     setEditingRuleIdx(null);
   };
 
   const handleRemoveRule = (index: number) => {
-    setRules(rules.filter((_, i) => i !== index));
+    removeRule(index);
   };
 
   const handleSaveInputEdit = (index: number) => {
@@ -112,7 +113,7 @@ export const Step1Problem = ({ onNext }: Step1Props) => {
             value={problemStatement}
             onChange={(e) => setProblemStatement(e.target.value)}
             placeholder="Example: Write a program that takes an integer and checks if it is Even or Odd..."
-            className="w-full min-h-[100px] bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none overflow-hidden leading-relaxed"
+            className="w-full min-h-25 bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none overflow-hidden leading-relaxed"
           />
         </div>
 

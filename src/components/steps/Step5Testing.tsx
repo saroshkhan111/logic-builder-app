@@ -9,7 +9,6 @@ import { useLogicFlowStore } from "@/store/logicFlowStore";
 export const Step5Testing = () => {
   const {
     setCurrentStep,
-    problemStatement,
     inputs,
     outputs,
     testCases,
@@ -19,6 +18,7 @@ export const Step5Testing = () => {
     updateTestCaseResult,
     isTesting,
     setIsTesting,
+    pythonCode,
   } = useLogicFlowStore();
 
   const [newTestCase, setNewTestCase] = useState({ name: "", input: "", expectedOutput: "" });
@@ -60,30 +60,23 @@ export const Step5Testing = () => {
 
     const firstOutput = outputs.length > 0 ? outputs[0] : "Expected";
 
-    const parseInput = (input: string) => {
-      const match = input.match(/^(\w+)/);
-      return match ? match[1] : input;
-    };
-
     const isNumeric = (input: string) => /number|integer|int|float|digit/i.test(input);
     const isBoolean = (input: string) => /bool|boolean|flag/i.test(input);
 
     const generateValues = (mode: "standard" | "boundary" | "edge"): string => {
       const parts = inputs.map((inp) => {
-        const name = parseInput(inp);
         if (isBoolean(inp)) {
-          if (mode === "standard") return `${name}=True`;
-          return `${name}=False`;
+          if (mode === "standard") return "True";
+          return "False";
         }
         if (isNumeric(inp)) {
-          if (mode === "standard") return `${name}=10`;
-          if (mode === "boundary") return `${name}=0`;
-          return `${name}=-1`;
+          if (mode === "standard") return "10";
+          if (mode === "boundary") return "0";
+          return "-1";
         }
-        // string type
-        if (mode === "standard") return `${name}=Hello`;
-        if (mode === "boundary") return `${name}=A`;
-        return `${name}=`;
+        if (mode === "standard") return "Hello";
+        if (mode === "boundary") return "A";
+        return "";
       });
       return parts.join(", ");
     };
@@ -118,19 +111,33 @@ export const Step5Testing = () => {
   const handleRunTests = async () => {
     setIsTesting(true);
 
-    const userCode = `
-num = int(input())
-if num % 2 == 0:
-    print("Even")
-else:
-    print("Odd")
-`;
+    const funcMatch = pythonCode.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
+    const funcName = funcMatch ? funcMatch[1] : null;
 
     for (const test of testCases) {
       updateTestCaseResult(test.id, "RUNNING");
-      const result = await runPythonCode(userCode, test.input);
 
-      if (!result.error && result.output === test.expectedOutput) {
+      let codeToExecute = pythonCode;
+
+      if (funcName) {
+        const formattedArgs = test.input.replace(/\n/g, ", ");
+        codeToExecute = `${pythonCode}\n\ntry:\n    _res = ${funcName}(${formattedArgs})\n    if _res is not None:\n        print(_res)\nexcept Exception as _e:\n    print(f"Error: {_e}")\n`;
+      }
+
+      const result = await runPythonCode(codeToExecute, test.input);
+
+      const actualTrimmed = result.output.trim();
+      const expectedTrimmed = test.expectedOutput.trim();
+
+      const isMatch =
+        actualTrimmed === expectedTrimmed ||
+        (actualTrimmed !== "" &&
+          expectedTrimmed !== "" &&
+          !isNaN(Number(actualTrimmed)) &&
+          !isNaN(Number(expectedTrimmed)) &&
+          Number(actualTrimmed) === Number(expectedTrimmed));
+
+      if (!result.error && isMatch) {
         updateTestCaseResult(test.id, "PASSED", result.output);
       } else {
         updateTestCaseResult(test.id, "FAILED", result.error || result.output);
@@ -172,7 +179,6 @@ else:
           </div>
         </div>
 
-        {/* Auto-Gen Warning */}
         {autoGenWarning && (
           <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">
             <XCircle className="w-3.5 h-3.5 shrink-0" />
@@ -180,7 +186,6 @@ else:
           </div>
         )}
 
-        {/* Add New Test Case Form */}
         <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
           <label className="text-xs font-semibold text-slate-300 block">Add New Test Case</label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -226,130 +231,128 @@ else:
           </button>
         </div>
 
-        {/* Test Cases Table */}
         {testCases.length === 0 ? (
           <div className="flex items-center justify-center h-40 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-950/40 text-center">
             No test cases yet. Add your first test case above to get started.
           </div>
         ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-900/50">
-                <th className="p-3.5">Test Case</th>
-                <th className="p-3.5">Input</th>
-                <th className="p-3.5">Expected Output</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs">
-              {testCases.map((tc) => (
-                <tr key={tc.id} className="hover:bg-slate-900/30 transition-colors">
-                  {editingTcId === tc.id ? (
-                    <>
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          value={editTcValues.name}
-                          onChange={(e) => setEditTcValues({ ...editTcValues, name: e.target.value })}
-                          className="w-full bg-slate-900 border border-cyan-500 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          value={editTcValues.input}
-                          onChange={(e) => setEditTcValues({ ...editTcValues, input: e.target.value })}
-                          className="w-full bg-slate-900 border border-cyan-500 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          value={editTcValues.expectedOutput}
-                          onChange={(e) => setEditTcValues({ ...editTcValues, expectedOutput: e.target.value })}
-                          className="w-full bg-slate-900 border border-cyan-500 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
-                        />
-                      </td>
-                      <td className="p-2 text-slate-400">Editing...</td>
-                      <td className="p-2">
-                        <div className="flex gap-1">
-                          <button
-                            onClick={handleSaveTcEdit}
-                            className="text-emerald-400 hover:text-emerald-300 p-1 cursor-pointer"
-                            title="Save"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setEditingTcId(null)}
-                            className="text-slate-400 hover:text-slate-300 p-1 cursor-pointer"
-                            title="Cancel"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="p-3.5 font-semibold text-slate-200">{tc.name}</td>
-                      <td className="p-3.5 font-mono text-cyan-300">{tc.input}</td>
-                      <td className="p-3.5 font-mono text-emerald-300">{tc.expectedOutput}</td>
-                      <td className="p-3.5">
-                        {tc.status === "PASSED" && (
-                          <span className="inline-flex items-center gap-1.5 text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[11px]">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> PASSED
-                          </span>
-                        )}
-                        {tc.status === "FAILED" && (
-                          <span className="inline-flex items-center gap-1.5 text-rose-400 font-bold bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-full text-[11px]">
-                            <XCircle className="w-3.5 h-3.5" /> FAILED
-                          </span>
-                        )}
-                        {tc.status === "RUNNING" && (
-                          <span className="inline-flex items-center gap-1.5 text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full text-[11px] animate-pulse">
-                            <Clock className="w-3.5 h-3.5" /> RUNNING
-                          </span>
-                        )}
-                        {tc.status === "PENDING" && (
-                          <span className="inline-flex items-center gap-1.5 text-slate-400 font-medium bg-slate-800/60 border border-slate-700/50 px-2.5 py-1 rounded-full text-[11px]">
-                            PENDING
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3.5">
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => {
-                              setEditingTcId(tc.id);
-                              setEditTcValues({ name: tc.name, input: tc.input, expectedOutput: tc.expectedOutput });
-                            }}
-                            className="text-cyan-400 hover:text-white p-1 cursor-pointer transition-colors"
-                            title="Edit Test Case"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => removeTestCase(tc.id)}
-                            className="text-cyan-400 hover:text-rose-400 p-1 cursor-pointer transition-colors"
-                            title="Delete Test Case"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  )}
+          <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-900/50">
+                  <th className="p-3.5">Test Case</th>
+                  <th className="p-3.5">Input</th>
+                  <th className="p-3.5">Expected Output</th>
+                  <th className="p-3.5">Status</th>
+                  <th className="p-3.5">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 text-xs">
+                {testCases.map((tc) => (
+                  <tr key={tc.id} className="hover:bg-slate-900/30 transition-colors">
+                    {editingTcId === tc.id ? (
+                      <>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={editTcValues.name}
+                            onChange={(e) => setEditTcValues({ ...editTcValues, name: e.target.value })}
+                            className="w-full bg-slate-900 border border-cyan-500 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={editTcValues.input}
+                            onChange={(e) => setEditTcValues({ ...editTcValues, input: e.target.value })}
+                            className="w-full bg-slate-900 border border-cyan-500 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={editTcValues.expectedOutput}
+                            onChange={(e) => setEditTcValues({ ...editTcValues, expectedOutput: e.target.value })}
+                            className="w-full bg-slate-900 border border-cyan-500 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
+                          />
+                        </td>
+                        <td className="p-2 text-slate-400">Editing...</td>
+                        <td className="p-2">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={handleSaveTcEdit}
+                              className="text-emerald-400 hover:text-emerald-300 p-1 cursor-pointer"
+                              title="Save"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setEditingTcId(null)}
+                              className="text-slate-400 hover:text-slate-300 p-1 cursor-pointer"
+                              title="Cancel"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="p-3.5 font-semibold text-slate-200">{tc.name}</td>
+                        <td className="p-3.5 font-mono text-cyan-300">{tc.input}</td>
+                        <td className="p-3.5 font-mono text-emerald-300">{tc.expectedOutput}</td>
+                        <td className="p-3.5">
+                          {tc.status === "PASSED" && (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[11px]">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> PASSED
+                            </span>
+                          )}
+                          {tc.status === "FAILED" && (
+                            <span className="inline-flex items-center gap-1.5 text-rose-400 font-bold bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-full text-[11px]">
+                              <XCircle className="w-3.5 h-3.5" /> FAILED
+                            </span>
+                          )}
+                          {tc.status === "RUNNING" && (
+                            <span className="inline-flex items-center gap-1.5 text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full text-[11px] animate-pulse">
+                              <Clock className="w-3.5 h-3.5" /> RUNNING
+                            </span>
+                          )}
+                          {tc.status === "PENDING" && (
+                            <span className="inline-flex items-center gap-1.5 text-slate-400 font-medium bg-slate-800/60 border border-slate-700/50 px-2.5 py-1 rounded-full text-[11px]">
+                              PENDING
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3.5">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingTcId(tc.id);
+                                setEditTcValues({ name: tc.name, input: tc.input, expectedOutput: tc.expectedOutput });
+                              }}
+                              className="text-cyan-400 hover:text-white p-1 cursor-pointer transition-colors"
+                              title="Edit Test Case"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => removeTestCase(tc.id)}
+                              className="text-cyan-400 hover:text-rose-400 p-1 cursor-pointer transition-colors"
+                              title="Delete Test Case"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
-        {/* Navigation */}
         <div className="flex justify-between pt-2">
           <button
             onClick={() => setCurrentStep(4)}

@@ -1,6 +1,7 @@
 import "@/app/globals.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 
@@ -47,6 +48,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <head>
+        <Script
+          src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         <ThemeProvider>{children}</ThemeProvider>
       </body>

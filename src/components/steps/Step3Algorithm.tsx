@@ -93,7 +93,7 @@ export const Step3Algorithm = () => {
               value={algorithm}
               onChange={handleTextareaChange}
               placeholder={"START\n1. Create two variables.\n2. Assign them hardcoded values.\n3. INPUT a and b\n4. IF a > b\n5. Compute a + b\n6. DISPLAY result\nEND"}
-              className="w-full min-h-[100px] bg-slate-900 border border-slate-800 rounded-lg p-3 font-mono text-xs text-emerald-400 focus:outline-none focus:border-indigo-500 resize-none overflow-hidden leading-relaxed"
+              className="w-full min-h-25 bg-slate-900 border border-slate-800 rounded-lg p-3 font-mono text-xs text-emerald-400 focus:outline-none focus:border-indigo-500 resize-none overflow-hidden leading-relaxed"
             />
           </div>
 
