@@ -1,90 +1,109 @@
-# Logic Builder
+# 🧠 Logic Builder
 
-A 6-step guided web app that teaches programming beginners how to think like programmers.
+A 6-step guided web app that teaches programming beginners how to think like 
+programmers — from understanding a problem to writing optimized Python code.
 
----
-
-## What It Does
-
-Logic Builder walks you through solving a programming problem from start to finish. You start with a plain-English problem statement and end with working, tested, optimized Python code. Each step teaches a specific skill used by real programmers.
+**🌐 Live Demo:** [logic-builder-app.vercel.app](https://logic-builder-app.vercel.app)
 
 ---
 
-## The 6 Steps
+## 📖 What It Does
 
-1. **Problem Statement** — Define the inputs, outputs, and rules
-2. **Requirements Analysis** — Identify the data, tools, and concepts you need
-3. **Algorithm Design** — Write pseudocode and get an auto-generated flowchart
-4. **Code Writing** — Write Python code with live PEP 8 style validation
-5. **Testing** — Auto-generated test cases run in your browser
-6. **Optimization** — Get complexity analysis and refactoring suggestions
+Logic Builder walks users through **6 guided steps** to solve a programming 
+problem — not just writing code, but understanding the thinking behind it.
 
----
-
-## Demo
-
-![Demo GIF](demo.gif)
-
-[Watch Video Demo](https://youtube.com/your-video-link)
+Example: A user writes "Check if a number is even or odd", and the app helps 
+them break it down, design a flowchart, write Python code, and test it — 
+all in the browser.
 
 ---
 
-## Tech Stack
+## 🎯 The 6 Steps
+
+1. **Problem Statement** — Define inputs, outputs, and rules
+2. **Requirements Analysis** — Identify data, tools, and concepts needed
+3. **Algorithm Design** — Write pseudocode, get an auto-generated flowchart
+4. **Code Writing** — Write Python code with PEP 8 validation
+5. **Testing** — Auto-generate test cases, run them in-browser
+6. **Optimization** — Analyze complexity and get refactoring suggestions
+
+---
+
+## 🚀 Features
+
+- ✅ 6-step guided workflow (not just a code editor)
+- ✅ Auto-generated flowchart from pseudocode
+- ✅ Auto-generated test cases (5-6 per problem)
+- ✅ Code complexity analysis (Big-O detection)
+- ✅ Smart refactoring suggestions
+- ✅ PEP 8 style validation
+- ✅ Real Python execution via Pyodide (WebAssembly)
+- ✅ Works entirely in the browser
+
+---
+
+## 🛠 Tech Stack
 
 ### Frontend
-- Next.js 16 (App Router)
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- Zustand (state management)
-- Framer Motion (animations)
-- Monaco Editor (code editor)
+- **Next.js 16** (App Router)
+- **React 19** + **TypeScript**
+- **Tailwind CSS 4** (styling)
+- **Zustand** (state management)
+- **Framer Motion** (animations)
+- **Monaco Editor** (code editing)
 
 ### In-Browser Python
-- Pyodide (CPython compiled to WebAssembly)
-- Runs user code directly in the browser — no server needed
+- **Pyodide** — CPython compiled to WebAssembly
+- Runs user's Python code 100% in the browser
+- No server needed for code execution
 
-### Python Engine (Optional)
-- FastAPI
-- Pydantic
-- uv (package manager)
-- Used for flowchart validation and PEP 8 parsing
+### Python Engine (Optional Backend)
+- **FastAPI** — HTTP API for validation
+- **Pydantic** — Data validation
+- **uv** — Python package manager
 
 ### Testing
-- Vitest (frontend unit tests)
-- Playwright (E2E tests)
-- Pytest (Python engine tests)
+- **Vitest** — Frontend unit tests (98 tests)
+- **Playwright** — E2E automated walkthrough
+- **Pytest** — Python engine tests (11 tests)
 
 ### Dev Tools
-- ESLint, Prettier (frontend)
-- Black, Flake8 (Python)
-- Husky (pre-commit hooks)
+- **ESLint** + **Prettier** (frontend)
+- **Black** + **Flake8** (Python)
+- **Husky** (pre-commit hooks)
 
 ---
 
-## No API Keys Required
+## 🔐 No API Keys Required
 
-**This app does not use any paid services or AI APIs.**
+**This project does NOT use any paid APIs or API keys.**
 
-- Pyodide runs 100% in the browser (client-side)
-- No OpenAI, Anthropic, or Gemini API keys needed
-- No paid subscriptions or external services
-- The FastAPI engine is optional — the app works fully without it
+- ❌ No OpenAI API key
+- ❌ No Anthropic API key
+- ❌ No Gemini API key
+- ❌ No paid services
 
-All code processing happens locally in the user's browser. Nothing is sent to any server.
+**Everything runs locally:**
+- Python code executes in the user's browser (via Pyodide)
+- No code is sent to any server
+- FastAPI engine is optional — the app works without it
+- Works offline after initial load
 
 ---
 
-## Getting Started
+## 🚦 Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- Python 3.11+ (only if using the optional Python engine)
+- Node.js 20+
+- npm or pnpm
 
-### Frontend
+### Setup
 
 ```bash
+# Install dependencies
 npm install
+
+# Start dev server
 npm run dev
 ```
 
@@ -100,38 +119,7 @@ fastapi run
 
 ---
 
-## Screenshots
-
-| Step 1: Problem Statement | Step 4: Code Writing |
-|---------------------------|----------------------|
-| ![Step 1](screenshots/step1.png) | ![Step 4](screenshots/step4.png) |
-
-| Step 5: Testing | Step 6: Optimization |
-|-----------------|----------------------|
-| ![Step 5](screenshots/step5.png) | ![Step 6](screenshots/step6.png) |
-
----
-
-## Live Demo
-
-[Live Demo](https://your-demo-url.vercel.app)
-
----
-
-## Features
-
-- 6-step guided workflow (not just a code editor)
-- Auto-generated flowchart from pseudocode
-- Auto-generated test cases (5-6 per problem)
-- Code complexity analysis (Big-O detection)
-- Smart refactoring suggestions
-- PEP 8 style validation
-- Real test execution via Pyodide
-- Export and share functionality
-
----
-
-## License
+## 📄 License
 
 MIT
 
