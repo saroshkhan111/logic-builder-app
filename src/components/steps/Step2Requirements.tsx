@@ -5,11 +5,7 @@ import React, { useState } from "react";
 
 import { useLogicFlowStore } from "@/store/logicFlowStore";
 
-interface Step2Props {
-  onNext?: () => void;
-}
-
-export const Step2Requirements = ({ onNext }: Step2Props) => {
+export const Step2Requirements = () => {
   const {
     setCurrentStep,
     requiredData,
@@ -256,14 +252,12 @@ export const Step2Requirements = ({ onNext }: Step2Props) => {
           >
             Back to Step 1
           </button>
-          {onNext && (
-            <button
-              onClick={onNext}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
-            >
-              Next: Algorithm Design <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={() => setCurrentStep(3)}
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+          >
+            Next: Algorithm Design <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>

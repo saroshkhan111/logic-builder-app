@@ -1,192 +1,210 @@
-﻿"use client";
+"use client";
 
-import { Check, CheckCircle2, Edit2, Gauge, ListChecks, Plus, RotateCcw, Trash2, Wand2, X } from "lucide-react";
-import { useState } from "react";
+import {
+  CheckCircle2, Copy, Download, Gauge, Lightbulb, ListChecks,
+  Play, Plus, RotateCcw, Share2, Sparkles, Timer, TrendingUp, Wand2, Zap,
+} from "lucide-react";
+import { useState, useEffect } from "react";
 
+import { analyzeCodeComplexity, getComplexityColor } from "@/lib/complexityAnalyzer";
+import { generateOptimizationSuggestions, getSeverityStyles } from "@/lib/optimizationEngine";
+import { runPythonCode } from "@/lib/pyodide/runner";
 import { useLogicFlowStore } from "@/store/logicFlowStore";
 
 export const Step6Optimization = () => {
   const {
-    setCurrentStep,
-    problemStatement,
-    inputs,
-    outputs,
-    requiredData,
-    toolsFunctions,
-    logicalConcepts,
-    algorithm,
-    fileName,
-    optimizationRules,
-    addOptimizationRule,
-    updateOptimizationRule,
-    removeOptimizationRule,
-    reset,
+    setCurrentStep, problemStatement, inputs, outputs, algorithm, fileName,
+    pythonCode, optimizationRules, addOptimizationRule, reset,
+    optimizationSuggestions, setOptimizationSuggestions, applySuggestion,
+    complexityMetrics, setComplexityMetrics, benchmarkResult, setBenchmarkResult, testCases,
   } = useLogicFlowStore();
 
   const [ruleInput, setRuleInput] = useState("");
-  const [editingRuleIdx, setEditingRuleIdx] = useState<number | null>(null);
-  const [editRuleValue, setEditRuleValue] = useState("");
+  const [isBenchmarking, setIsBenchmarking] = useState(false);
+  const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (pythonCode && pythonCode !== "# Write your Python code here\n") {
+      setComplexityMetrics(analyzeCodeComplexity(pythonCode));
+      setOptimizationSuggestions(generateOptimizationSuggestions(pythonCode));
+    }
+  }, [pythonCode, setComplexityMetrics, setOptimizationSuggestions]);
 
   const handleAddRule = () => {
-    if (!ruleInput.trim()) return;
-    addOptimizationRule(ruleInput.trim());
-    setRuleInput("");
+    if (ruleInput.trim()) { addOptimizationRule(ruleInput.trim()); setRuleInput(""); }
   };
 
-  const summaryItems = [
-    { label: "Problem Statement", value: problemStatement.trim() || "Not defined yet (Step 1)" },
-    { label: "Inputs", value: inputs.length > 0 ? inputs.join(", ") : "None added (Step 1)" },
-    { label: "Outputs", value: outputs.length > 0 ? outputs.join(", ") : "None added (Step 1)" },
-    {
-      label: "Requirements",
-      value:
-        requiredData.length + toolsFunctions.length + logicalConcepts.length > 0
-          ? `${requiredData.length} data, ${toolsFunctions.length} tools, ${logicalConcepts.length} skills`
-          : "None added (Step 2)",
-    },
-    { label: "Algorithm", value: algorithm.trim() ? `${algorithm.trim().split("\n").length} lines drafted` : "Empty (Step 3)" },
-    { label: "Final File", value: fileName || "my_logic.py" },
-  ];
+  const handleRunBenchmark = async () => {
+    if (!pythonCode || pythonCode === "# Write your Python code here\n") return;
+    setIsBenchmarking(true);
+    const runs = 10;
+    let totalTime = 0;
+    let successCount = 0;
+    try {
+      const funcMatch = pythonCode.match(/def\s+(\w+)\s*\(([^)]*)\)/);
+      const funcName = funcMatch ? funcMatch[1] : null;
+      const params = funcMatch && funcMatch[2] ? funcMatch[2].split(",").map((p) => p.trim()) : [];
+
+      // Generate test arguments based on parameter count
+      const testArgs = params.map((_, idx) => {
+        const inputVal = inputs.length > idx ? "10" : "0";
+        return inputVal;
+      }).join(", ");
+
+      const codeToRun = funcName
+        ? `${pythonCode}\nprint(${funcName}(${testArgs}))`
+        : pythonCode;
+
+      for (let i = 0; i < runs; i++) {
+        const start = performance.now();
+        const result = await runPythonCode(codeToRun);
+        if (!result.error) {
+          totalTime += performance.now() - start;
+          successCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        setBenchmarkResult({ avgMs: totalTime / successCount, runs: successCount, timestamp: Date.now() });
+      }
+    } catch {
+      // Benchmark failed
+    }
+    setIsBenchmarking(false);
+  };
+
+  const handleExportReport = () => {
+    const report = { problem: problemStatement, inputs, outputs, complexity: complexityMetrics, testResults: testCases.map((tc) => ({ name: tc.name, status: tc.status })) };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `${fileName.replace(".py", "")}-report.json`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadPython = () => {
+    const header = `# ${fileName}\n# Generated by Logic Builder\n# ${new Date().toLocaleDateString()}\n\n`;
+    const blob = new Blob([header + pythonCode], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = fileName || "solution.py"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCopyShareLink = () => {
+    const state = useLogicFlowStore.getState();
+    const encoded = btoa(JSON.stringify({ p: state.problemStatement, c: state.pythonCode, f: state.fileName }));
+    navigator.clipboard.writeText(`${window.location.origin}?share=${encoded}`);
+  };
+
+  const completionScore = [problemStatement.trim(), inputs.length > 0, outputs.length > 0, algorithm.trim(), pythonCode !== "# Write your Python code here\n", testCases.length > 0].filter(Boolean).length;
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 backdrop-blur space-y-6">
-        <div>
-          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">
-            STEP 6
-          </span>
-          <h2 className="text-xl font-bold text-white">Optimization & Refactoring</h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Polish your code for efficiency and readability, then review your finished problem-solving workflow.
-          </p>
+      <div className="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 backdrop-blur">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">STEP 6</span>
+            <h2 className="text-xl font-bold text-white">Optimization & Analysis</h2>
+            <p className="text-xs text-slate-400 mt-1">AI-powered code analysis with actionable suggestions</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleExportReport} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg flex items-center gap-1.5 cursor-pointer"><Download className="w-3.5 h-3.5" /> Export</button>
+            <button onClick={handleCopyShareLink} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg flex items-center gap-1.5 cursor-pointer"><Share2 className="w-3.5 h-3.5" /> Share</button>
+            <button onClick={handleDownloadPython} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg flex items-center gap-1.5 cursor-pointer"><Copy className="w-3.5 h-3.5" /> .py</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
+          <div className="flex items-center gap-2 text-indigo-400 font-semibold text-xs"><Gauge className="w-4 h-4" /> Complexity Analysis</div>
+          {complexityMetrics ? (
+            <>
+              <div className="flex items-center justify-center py-2">
+                <div className="relative w-24 h-24">
+                  <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#1e293b" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="40" fill="none" stroke={complexityMetrics.score >= 70 ? "#10b981" : complexityMetrics.score >= 40 ? "#f59e0b" : "#f43f5e"} strokeWidth="8" strokeDasharray={`${complexityMetrics.score * 2.51} 251`} strokeLinecap="round" />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center"><span className="text-2xl font-bold text-white">{complexityMetrics.score}</span></div>
+                </div>
+              </div>
+              <div className={`px-3 py-2 rounded-lg border text-xs font-mono ${getComplexityColor(complexityMetrics.timeComplexity)}`}>Time: {complexityMetrics.timeComplexity}</div>
+              <div className={`px-3 py-2 rounded-lg border text-xs font-mono ${getComplexityColor(complexityMetrics.spaceComplexity.split(" ")[0])}`}>Space: {complexityMetrics.spaceComplexity}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {[["Lines", complexityMetrics.linesOfCode], ["Funcs", complexityMetrics.functions], ["CC", complexityMetrics.cyclomaticComplexity], ["Comments", `${complexityMetrics.commentRatio}%`]].map(([l, v]) => (
+                  <div key={l} className="bg-slate-950/60 p-2.5 rounded-lg text-center"><div className="text-lg font-bold text-white">{v}</div><div className="text-[10px] text-slate-400">{l}</div></div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8 text-slate-400 text-xs"><Zap className="w-8 h-8 mx-auto mb-2 opacity-50" />Write code in Step 4</div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Optimization Rules with CRUD */}
-          <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-4">
-            <div className="flex items-center gap-2 text-indigo-400 font-semibold text-xs">
-              <Wand2 className="w-4 h-4" /> Optimization Rules
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={ruleInput}
-                onChange={(e) => setRuleInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddRule()}
-                placeholder="e.g. Use list comprehension for speed"
-                className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-              />
-              <button
-                onClick={handleAddRule}
-                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" /> Add
-              </button>
-            </div>
-            <div className="space-y-1.5 pt-1">
-              {optimizationRules.map((item, idx) =>
-                editingRuleIdx === idx ? (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-1 bg-slate-900 border border-amber-500 rounded-lg p-1 text-xs"
-                  >
-                    <input
-                      type="text"
-                      value={editRuleValue}
-                      onChange={(e) => setEditRuleValue(e.target.value)}
-                      className="bg-transparent text-slate-100 text-xs focus:outline-none px-1 flex-1"
-                    />
-                    <button
-                      onClick={() => {
-                        if (editRuleValue.trim()) {
-                          updateOptimizationRule(idx, editRuleValue.trim());
-                        }
-                        setEditingRuleIdx(null);
-                      }}
-                      className="text-emerald-400 hover:text-emerald-300 p-0.5 cursor-pointer"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setEditingRuleIdx(null)}
-                      className="text-slate-400 hover:text-slate-300 p-0.5 cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+        <div className="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
+          <div className="flex items-center gap-2 text-amber-400 font-semibold text-xs">
+            <Lightbulb className="w-4 h-4" /> Smart Suggestions
+            {optimizationSuggestions.length > 0 && <span className="ml-auto bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full text-[10px]">{optimizationSuggestions.filter((s) => !s.applied).length} new</span>}
+          </div>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {optimizationSuggestions.length === 0 ? (
+              <div className="text-center py-8 text-slate-400 text-xs"><Sparkles className="w-8 h-8 mx-auto mb-2 opacity-50" />No suggestions yet</div>
+            ) : optimizationSuggestions.map((s) => {
+              const styles = getSeverityStyles(s.severity);
+              const isExpanded = expandedSuggestion === s.id;
+              return (
+                <div key={s.id} className={`p-3 rounded-lg border ${s.applied ? "opacity-60 bg-emerald-500/5 border-emerald-500/20" : `${styles.bg} ${styles.border}`}`}>
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm">{styles.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-semibold ${s.applied ? "text-emerald-400 line-through" : styles.text}`}>{s.title}</span>
+                        {!s.applied && <span className={`text-[10px] px-1.5 py-0.5 rounded ${styles.bg} ${styles.text}`}>{s.severity}</span>}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">{s.description}</p>
+                      {isExpanded && s.originalCode && <div className="mt-2 p-2 bg-slate-950 rounded text-[10px] font-mono text-slate-300"><pre>{s.originalCode}</pre></div>}
+                      {isExpanded && s.optimizedCode && <div className="mt-1 p-2 bg-emerald-500/10 rounded text-[10px] font-mono text-emerald-300"><pre>{s.optimizedCode}</pre></div>}
+                      <div className="flex gap-2 mt-2">
+                        <button onClick={() => setExpandedSuggestion(isExpanded ? null : s.id)} className="text-[10px] text-indigo-400 hover:text-indigo-300 cursor-pointer">{isExpanded ? "Hide" : "Show"}</button>
+                        {!s.applied && <button onClick={() => applySuggestion(s.id)} className="text-[10px] text-emerald-400 hover:text-emerald-300 cursor-pointer">Apply</button>}
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span className="text-slate-300 flex-1">{item}</span>
-                    <button
-                      onClick={() => {
-                        setEditingRuleIdx(idx);
-                        setEditRuleValue(item);
-                      }}
-                      className="text-amber-400 hover:text-white transition-colors cursor-pointer"
-                      title="Edit Rule"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={() => removeOptimizationRule(idx)}
-                      className="text-amber-400 hover:text-rose-400 transition-colors cursor-pointer"
-                      title="Delete Rule"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                )
-              )}
-            </div>
-            {optimizationRules.length === 0 && (
-              <div className="flex items-start gap-2 text-xs text-slate-400 pt-1">
-                <Gauge className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                Review your algorithm for redundant loops - aim for the simplest path where possible.
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
+            <div className="flex items-center gap-2 text-cyan-400 font-semibold text-xs"><Timer className="w-4 h-4" /> Benchmark</div>
+            <button onClick={handleRunBenchmark} disabled={isBenchmarking || !pythonCode} className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed">
+              {isBenchmarking ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Running...</>) : (<><Play className="w-4 h-4" /> Run Benchmark</>)}
+            </button>
+            {benchmarkResult && (
+              <div className="bg-slate-950/60 p-4 rounded-xl space-y-3">
+                <div className="flex items-center justify-between"><span className="text-xs text-slate-400">Avg</span><span className={`text-lg font-bold ${benchmarkResult.avgMs < 1 ? "text-emerald-400" : "text-amber-400"}`}>{benchmarkResult.avgMs.toFixed(3)} ms</span></div>
+                <div className="flex items-center gap-1 text-[10px] text-slate-500"><TrendingUp className="w-3 h-3" /> {benchmarkResult.runs} runs</div>
               </div>
             )}
           </div>
-
-          {/* Project Summary */}
-          <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-4">
-            <div className="flex items-center gap-2 text-indigo-400 font-semibold text-xs">
-              <ListChecks className="w-4 h-4" /> Project Summary
-            </div>
-            <div className="space-y-1.5">
-              {summaryItems.map((item) => (
-                <div
-                  key={item.label}
-                  className="text-xs bg-slate-900/80 text-slate-300 p-2.5 rounded-lg border border-slate-800"
-                >
-                  <span className="text-indigo-300 font-semibold">{item.label}: </span>
-                  {item.value}
-                </div>
-              ))}
-            </div>
+          <div className="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
+            <div className="flex items-center gap-2 text-violet-400 font-semibold text-xs"><ListChecks className="w-4 h-4" /> Summary</div>
+            <div className="space-y-1"><div className="flex justify-between text-[10px]"><span className="text-slate-400">Completion</span><span className="text-white font-semibold">{completionScore}/6</span></div><div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-indigo-500 to-violet-500" style={{ width: `${(completionScore / 6) * 100}%` }} /></div></div>
           </div>
         </div>
+      </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between pt-2">
-          <button
-            onClick={() => setCurrentStep(5)}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-          >
-            Back to Step 5
-          </button>
-          <button
-            onClick={() => {
-              reset();
-              setCurrentStep(1);
-            }}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
-          >
-            <RotateCcw className="w-4 h-4" /> Start a New Problem
-          </button>
-        </div>
+      <div className="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
+        <div className="flex items-center gap-2 text-emerald-400 font-semibold text-xs"><Wand2 className="w-4 h-4" /> Optimization Rules</div>
+        <div className="flex gap-2"><input type="text" value={ruleInput} onChange={(e) => setRuleInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddRule()} placeholder="Add a custom rule..." className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500" /><button onClick={handleAddRule} className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer"><Plus className="w-3.5 h-3.5" /> Add</button></div>
+        <div className="flex flex-wrap gap-2">{optimizationRules.map((rule, idx) => (<div key={idx} className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /><span className="text-slate-300">{rule}</span></div>))}</div>
+      </div>
+
+      <div className="flex justify-between pt-2">
+        <button onClick={() => setCurrentStep(5)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-2 cursor-pointer">Back to Step 5</button>
+        <button onClick={() => { reset(); setCurrentStep(1); }} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-2 cursor-pointer"><RotateCcw className="w-4 h-4" /> Start a New Problem</button>
       </div>
     </div>
   );

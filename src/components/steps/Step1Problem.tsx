@@ -5,12 +5,9 @@ import React, { useEffect, useRef, useState } from "react";
 
 import { useLogicFlowStore } from "@/store/logicFlowStore";
 
-interface Step1Props {
-  onNext?: () => void;
-}
-
-export const Step1Problem = ({ onNext }: Step1Props) => {
+export const Step1Problem = () => {
   const {
+    setCurrentStep,
     problemStatement,
     setProblemStatement,
     inputs,
@@ -283,16 +280,14 @@ export const Step1Problem = ({ onNext }: Step1Props) => {
         </div>
 
         {/* Navigation */}
-        {onNext && (
-          <div className="flex justify-end pt-2">
-            <button
-              onClick={onNext}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
-            >
-              Next: Requirements Analysis <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={() => setCurrentStep(2)}
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+          >
+            Next: Requirements Analysis <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import type { LogicEdge, LogicNode } from "@/types/flow";
+import type { LogicEdge, LogicNode, OptimizationSuggestion, ComplexityMetrics, BenchmarkResult } from "@/types/flow";
+
+export type TestSource = "auto-generated" | "template" | "manual" | "invalid";
 
 export interface TestCase {
   id: string;
@@ -12,6 +14,7 @@ export interface TestCase {
   expectedOutput: string;
   actualOutput?: string;
   status?: "PASSED" | "FAILED" | "PENDING" | "RUNNING";
+  source?: TestSource;
 }
 
 interface LogicFlowState {
@@ -86,6 +89,13 @@ interface LogicFlowState {
   addOptimizationRule: (item: string) => void;
   updateOptimizationRule: (index: number, value: string) => void;
   removeOptimizationRule: (index: number) => void;
+  optimizationSuggestions: OptimizationSuggestion[];
+  setOptimizationSuggestions: (suggestions: OptimizationSuggestion[]) => void;
+  applySuggestion: (id: string) => void;
+  complexityMetrics: ComplexityMetrics | null;
+  setComplexityMetrics: (metrics: ComplexityMetrics | null) => void;
+  benchmarkResult: BenchmarkResult | null;
+  setBenchmarkResult: (result: BenchmarkResult | null) => void;
 
   // Flow chart
   nodes: LogicNode[];
@@ -262,6 +272,18 @@ export const useLogicFlowStore = create<LogicFlowState>()(
     set((state) => ({
       optimizationRules: state.optimizationRules.filter((_, i) => i !== index),
     })),
+  optimizationSuggestions: [],
+  setOptimizationSuggestions: (suggestions) => set({ optimizationSuggestions: suggestions }),
+  applySuggestion: (id) =>
+    set((state) => ({
+      optimizationSuggestions: state.optimizationSuggestions.map((s) =>
+        s.id === id ? { ...s, applied: true } : s
+      ),
+    })),
+  complexityMetrics: null,
+  setComplexityMetrics: (metrics) => set({ complexityMetrics: metrics }),
+  benchmarkResult: null,
+  setBenchmarkResult: (result) => set({ benchmarkResult: result }),
 
   // Flow chart
   nodes: [],
@@ -311,6 +333,9 @@ export const useLogicFlowStore = create<LogicFlowState>()(
       testCases: [],
       isTesting: false,
       optimizationRules: [],
+      optimizationSuggestions: [],
+      complexityMetrics: null,
+      benchmarkResult: null,
       nodes: [],
       edges: [],
       activeNodeId: null,

@@ -1,9 +1,11 @@
 ﻿"use client";
 
-import { AlertCircle, Check, CheckCircle2, Edit2, FileCode, Plus, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle, Check, CheckCircle2, Edit2, FileCode, Play, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { useState, useMemo } from "react";
 
 import { useLogicFlowStore } from "@/store/logicFlowStore";
+import { suggestFileNames } from "@/lib/fileNameSuggester";
+import { traceExecution, type DryRunResult } from "@/lib/dryRunVisualizer";
 
 export const Step4Code = () => {
   const {
@@ -16,14 +18,35 @@ export const Step4Code = () => {
     addCodeNote,
     updateCodeNote,
     removeCodeNote,
+    problemStatement,
+    inputs,
+    outputs,
   } = useLogicFlowStore();
 
   const [noteInput, setNoteInput] = useState("");
   const [editingNoteIdx, setEditingNoteIdx] = useState<number | null>(null);
   const [editNoteValue, setEditNoteValue] = useState("");
+  const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
+  const [showDryRun, setShowDryRun] = useState(false);
 
   // PEP 8 Validation Check
   const isSnakeCase = /^[a-z0-9_]+\.py$/.test(fileName);
+
+  // Smart file name suggestions
+  const suggestedNames = useMemo(
+    () => suggestFileNames(problemStatement, pythonCode, inputs, outputs),
+    [problemStatement, pythonCode, inputs, outputs]
+  );
+
+  const handleSuggestionClick = (name: string) => {
+    setFileName(name);
+  };
+
+  const handleDryRun = () => {
+    const result = traceExecution(pythonCode);
+    setDryRunResult(result);
+    setShowDryRun(true);
+  };
 
   const handleAddNote = () => {
     if (!noteInput.trim()) return;
@@ -67,11 +90,45 @@ export const Step4Code = () => {
               </span>
             )}
           </div>
+
+          {/* Smart File Name Suggestions */}
+          {suggestedNames.length > 0 && (
+            <div className="mt-2">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-indigo-300 mb-1.5">
+                <Sparkles className="w-3 h-3" />
+                <span>Suggested names (click to use):</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {suggestedNames.map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => handleSuggestionClick(name)}
+                    title="Click to use this name"
+                    className={`px-3 py-1 rounded-full text-xs font-mono border transition-all cursor-pointer ${
+                      fileName === name
+                        ? "bg-indigo-600 border-indigo-500 text-white"
+                        : "bg-indigo-950/50 border-indigo-700/50 text-indigo-300 hover:bg-indigo-900/60 hover:border-indigo-500 hover:text-white"
+                    }`}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Python Code Editor */}
         <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
-          <label className="block text-xs font-semibold text-slate-300">Python Code Workspace</label>
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold text-slate-300">Python Code Workspace</label>
+            <button
+              onClick={handleDryRun}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-bold rounded-lg transition-all cursor-pointer"
+            >
+              <Play className="w-3 h-3" /> Dry Run
+            </button>
+          </div>
           <textarea
             value={pythonCode}
             onChange={(e) => setPythonCode(e.target.value)}
@@ -79,6 +136,107 @@ export const Step4Code = () => {
             className="w-full h-48 bg-slate-900 border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500 leading-relaxed resize-y"
           />
         </div>
+
+        {/* Dry Run Visualizer Panel */}
+        {showDryRun && dryRunResult && (
+          <div className="bg-slate-950/60 p-4 rounded-xl border border-cyan-800/50 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-xs font-semibold text-cyan-300">
+                <Play className="w-4 h-4 text-cyan-400" /> Dry Run Visualizer — Step-by-Step Execution
+              </label>
+              <button
+                onClick={() => setShowDryRun(false)}
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {dryRunResult.steps.map((step, idx) => (
+                <div
+                  key={idx}
+                  className={`p-2.5 rounded-lg border text-xs ${
+                    step.type === "comment"
+                      ? "bg-slate-900/50 border-slate-800 text-slate-500"
+                      : step.type === "function_def"
+                      ? "bg-violet-950/30 border-violet-800/40"
+                      : step.type === "return"
+                      ? "bg-amber-950/30 border-amber-800/40"
+                      : step.type === "print"
+                      ? "bg-emerald-950/30 border-emerald-800/40"
+                      : step.type === "control_flow"
+                      ? "bg-blue-950/30 border-blue-800/40"
+                      : step.type === "function_call"
+                      ? "bg-pink-950/30 border-pink-800/40"
+                      : "bg-slate-900/80 border-slate-700/50"
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-[10px] font-mono text-slate-500 min-w-[20px] text-right pt-0.5">
+                      {step.lineNumber}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <code className="text-slate-300 font-mono text-[11px] break-all">
+                        {step.source.trim()}
+                      </code>
+                      {step.explanation && step.type !== "comment" && (
+                        <p className="text-[10px] text-cyan-300/80 mt-0.5">
+                          → {step.explanation}
+                        </p>
+                      )}
+                      {Object.keys(step.variablesChanged).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {Object.entries(step.variablesChanged).map(([key, val]) => (
+                            <span
+                              key={key}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-800 rounded text-[10px] font-mono"
+                            >
+                              <span className="text-indigo-400">{key}</span>
+                              <span className="text-slate-500">=</span>
+                              <span className="text-emerald-400">{val}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {step.output && (
+                        <p className="text-[10px] text-emerald-400 mt-0.5">
+                          🖨️ Output: {step.output}
+                        </p>
+                      )}
+                      {step.returnValue && (
+                        <p className="text-[10px] text-amber-400 mt-0.5">
+                          ↩️ Returns: {step.returnValue}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Final Scope Summary */}
+            {Object.keys(dryRunResult.finalScope).length > 0 && (
+              <div className="pt-2 border-t border-slate-800">
+                <p className="text-[10px] font-semibold text-slate-400 mb-1.5">
+                  Final Variables:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(dryRunResult.finalScope).map(([key, val]) => (
+                    <span
+                      key={key}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-slate-800 rounded-lg text-[10px] font-mono border border-slate-700"
+                    >
+                      <span className="text-indigo-400">{key}</span>
+                      <span className="text-slate-500">=</span>
+                      <span className="text-emerald-400">{val}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Code Notes with CRUD */}
         <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">

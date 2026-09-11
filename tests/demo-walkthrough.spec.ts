@@ -96,16 +96,18 @@ test("Logic Builder - Full 6-Step Demo Walkthrough", async ({ page }) => {
   });
   await test.step("Step 5", async () => {
     await goToStep(page, 5);
-    await page.getByRole("button", { name: /Auto-Generate Test Cases/ }).click();
-    await expect(page.getByText("Standard Case")).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText("Boundary Case")).toBeVisible();
-    await expect(page.getByText("Edge Case")).toBeVisible();
-    await expect(page.locator("table tbody tr")).toHaveCount(3);
+    await page.getByRole("button", { name: /Auto-Generate/ }).first().click();
+    await expect(page.getByText("Typical (50)")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Boundary: minimum (0)")).toBeVisible();
+    await expect(page.getByText("Invalid: below minimum (-1)")).toBeVisible();
+    await expect(page.locator("table tbody tr")).toHaveCount(5);
   });
 
   await test.step("Step 6", async () => {
     await goToStep(page, 6);
-    await expect(page.getByText("Problem Statement: ")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Optimization & Analysis")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Complexity Analysis")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Smart Suggestions")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("Optimization Rules")).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole("button", { name: /Start a New Problem/ })).toBeVisible({ timeout: 10000 });
   });

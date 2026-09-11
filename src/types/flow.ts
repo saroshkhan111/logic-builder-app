@@ -45,3 +45,37 @@ export interface ExecutionResult {
   error?: string;
   durationMs: number;
 }
+
+/** Complexity analysis metrics for Python code. */
+export interface ComplexityMetrics {
+  timeComplexity: string;
+  spaceComplexity: string;
+  cyclomaticComplexity: number;
+  linesOfCode: number;
+  functions: number;
+  comments: number;
+  commentRatio: number;
+  score: number;
+}
+
+/** Severity level for optimization suggestions. */
+export type SuggestionSeverity = "high" | "medium" | "low";
+
+/** An optimization suggestion generated from code analysis. */
+export interface OptimizationSuggestion {
+  id: string;
+  severity: SuggestionSeverity;
+  title: string;
+  description: string;
+  originalCode?: string;
+  optimizedCode?: string;
+  lineNumber?: number;
+  applied: boolean;
+}
+
+/** Benchmark result from code execution. */
+export interface BenchmarkResult {
+  avgMs: number;
+  runs: number;
+  timestamp: number;
+}

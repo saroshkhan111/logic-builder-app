@@ -1,16 +1,21 @@
 ﻿"use client";
 
-import { Check, CheckCircle2, Clock, Edit2, Play, Plus, Trash2, Wand2, X, XCircle } from "lucide-react";
+import { Check, CheckCircle2, Clock, Edit2, Play, Plus, RefreshCw, Trash2, TriangleAlert, Wand2, X, XCircle } from "lucide-react";
 import { useState } from "react";
 
-import { runPythonCode } from "@/lib/pyodide/runner";
-import { useLogicFlowStore } from "@/store/logicFlowStore";
+import { TestSourceBadge } from "@/components/testing/TestSourceBadge";
+import { runSmartPythonCode } from "@/lib/pyodide/runner";
+import { generateTestCases } from "@/lib/smartTestGenerator";
+import { useLogicFlowStore, type TestCase } from "@/store/logicFlowStore";
+
 
 export const Step5Testing = () => {
   const {
     setCurrentStep,
     inputs,
     outputs,
+    rules,
+    problemStatement,
     testCases,
     addTestCase,
     updateTestCase,
@@ -25,6 +30,11 @@ export const Step5Testing = () => {
   const [editingTcId, setEditingTcId] = useState<string | null>(null);
   const [editTcValues, setEditTcValues] = useState({ name: "", input: "", expectedOutput: "" });
   const [autoGenWarning, setAutoGenWarning] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [useCodeOutputAsExpected, setUseCodeOutputAsExpected] = useState(true);
+  const [lastGeneratedCount, setLastGeneratedCount] = useState(0);
+  const [generationError, setGenerationError] = useState("");
+  const [executionWarning, setExecutionWarning] = useState("");
 
   const handleAddTestCase = () => {
     if (!newTestCase.name.trim() || !newTestCase.input.trim() || !newTestCase.expectedOutput.trim()) return;
@@ -49,82 +59,69 @@ export const Step5Testing = () => {
     setEditingTcId(null);
   };
 
-  const handleAutoGenerateTestCases = () => {
+  const handleAutoGenerateTestCases = async () => {
     if (inputs.length === 0) {
-      setAutoGenWarning("Please fill Step 1 Inputs & Conditions first to auto-generate test cases.");
+      setAutoGenWarning("Please add inputs in Step 1 first.");
       setTimeout(() => setAutoGenWarning(""), 4000);
       return;
     }
 
     setAutoGenWarning("");
+    setGenerationError("");
+    setExecutionWarning("");
+    setIsGenerating(true);
 
-    const firstOutput = outputs.length > 0 ? outputs[0] : "Expected";
+    // Regenerating replaces previously auto-generated cases (keeps manual ones)
+    const existing = useLogicFlowStore.getState().testCases;
+    existing
+      .filter((tc) => tc.id.startsWith("tc-auto-"))
+      .forEach((tc) => removeTestCase(tc.id));
 
-    const isNumeric = (input: string) => /number|integer|int|float|digit/i.test(input);
-    const isBoolean = (input: string) => /bool|boolean|flag/i.test(input);
+    try {
+      const { testCases: generated, warnings } = await generateTestCases(
+        inputs,
+        outputs,
+        rules,
+        problemStatement,
+        pythonCode,
+        useCodeOutputAsExpected
+      );
 
-    const generateValues = (mode: "standard" | "boundary" | "edge"): string => {
-      const parts = inputs.map((inp) => {
-        if (isBoolean(inp)) {
-          if (mode === "standard") return "True";
-          return "False";
-        }
-        if (isNumeric(inp)) {
-          if (mode === "standard") return "10";
-          if (mode === "boundary") return "0";
-          return "-1";
-        }
-        if (mode === "standard") return "Hello";
-        if (mode === "boundary") return "A";
-        return "";
-      });
-      return parts.join(", ");
-    };
-
-    const generated = [
-      {
-        id: `tc-auto-${Date.now()}-1`,
-        name: "Standard Case",
-        input: generateValues("standard"),
-        expectedOutput: firstOutput,
-        status: "PENDING" as const,
-      },
-      {
-        id: `tc-auto-${Date.now()}-2`,
-        name: "Boundary Case",
-        input: generateValues("boundary"),
-        expectedOutput: firstOutput,
-        status: "PENDING" as const,
-      },
-      {
-        id: `tc-auto-${Date.now()}-3`,
-        name: "Edge Case",
-        input: generateValues("edge"),
-        expectedOutput: firstOutput,
-        status: "PENDING" as const,
-      },
-    ];
-
-    generated.forEach((tc) => addTestCase(tc));
-  };
-
-  const handleRunTests = async () => {
-    setIsTesting(true);
-
-    const funcMatch = pythonCode.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
-    const funcName = funcMatch ? funcMatch[1] : null;
-
-    for (const test of testCases) {
-      updateTestCaseResult(test.id, "RUNNING");
-
-      let codeToExecute = pythonCode;
-
-      if (funcName) {
-        const formattedArgs = test.input.replace(/\n/g, ", ");
-        codeToExecute = `${pythonCode}\n\ntry:\n    _res = ${funcName}(${formattedArgs})\n    if _res is not None:\n        print(_res)\nexcept Exception as _e:\n    print(f"Error: {_e}")\n`;
+      if (generated.length === 0) {
+        setGenerationError("Could not generate test cases. Please check your inputs.");
+        setTimeout(() => setGenerationError(""), 4000);
+        return;
       }
 
-      const result = await runPythonCode(codeToExecute, test.input);
+      generated.forEach((tc) => addTestCase(tc));
+      setLastGeneratedCount(generated.length);
+
+      if (warnings.length > 0) {
+        setExecutionWarning(warnings.join(" "));
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to generate test cases.";
+      setGenerationError(message);
+      setTimeout(() => setGenerationError(""), 4000);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRunTests = async (casesToRun?: TestCase[]) => {
+    setIsTesting(true);
+
+    const tests = casesToRun && casesToRun.length > 0 ? casesToRun : testCases;
+
+    for (const test of tests) {
+      updateTestCaseResult(test.id, "RUNNING");
+
+      // Universal code executor: smartly detects the function to call (if any)
+      // and builds the right wrapper for every style of user code - return-only,
+      // print-only, both, multiple functions, input() based code, multi-line
+      // output and plain scripts.
+      const result = await runSmartPythonCode(pythonCode, test.input);
 
       const actualTrimmed = result.output.trim();
       const expectedTrimmed = test.expectedOutput.trim();
@@ -147,6 +144,14 @@ export const Step5Testing = () => {
     setIsTesting(false);
   };
 
+  const handleGenerateAndRun = async () => {
+    await handleAutoGenerateTestCases();
+    const freshCases = useLogicFlowStore.getState().testCases;
+    if (freshCases.length > 0) {
+      await handleRunTests(freshCases);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 backdrop-blur space-y-6">
@@ -162,14 +167,43 @@ export const Step5Testing = () => {
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={handleAutoGenerateTestCases}
-              className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+              onClick={handleGenerateAndRun}
+              disabled={isGenerating || isTesting}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+              title="Generate test cases and immediately run them"
             >
-              <Wand2 className="w-4 h-4" />
-              Auto-Generate Test Cases
+              {isGenerating ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4 fill-current" />
+              )}
+              Generate & Run
             </button>
             <button
-              onClick={handleRunTests}
+              onClick={handleAutoGenerateTestCases}
+              disabled={isGenerating}
+              className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+            >
+              {isGenerating ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Wand2 className="w-4 h-4" />
+              )}
+              {isGenerating ? "Analyzing your code..." : "Auto-Generate"}
+            </button>
+            {testCases.length > 0 && (
+              <button
+                onClick={handleAutoGenerateTestCases}
+                disabled={isGenerating}
+                className="px-3 py-2.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+                title="Regenerate test cases"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? "animate-spin" : ""}`} />
+                Regenerate
+              </button>
+            )}
+            <button
+              onClick={() => handleRunTests()}
               disabled={isTesting}
               className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
             >
@@ -185,6 +219,50 @@ export const Step5Testing = () => {
             {autoGenWarning}
           </div>
         )}
+
+        {generationError && (
+          <div className="flex items-center gap-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-lg">
+            <XCircle className="w-3.5 h-3.5 shrink-0" />
+            {generationError}
+          </div>
+        )}
+
+        {executionWarning && (
+          <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">
+            <TriangleAlert className="w-3.5 h-3.5 shrink-0" />
+            {executionWarning}
+          </div>
+        )}
+
+        {/* Toggle for code output as expected */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-500/5 border border-blue-500/15 px-4 py-3 rounded-xl">
+          <div className="flex items-center gap-3">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useCodeOutputAsExpected}
+                onChange={(e) => setUseCodeOutputAsExpected(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-600"></div>
+            </label>
+            <div>
+              <span className="text-xs font-semibold text-slate-200">
+                Use code output as expected (Recommended)
+              </span>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                {useCodeOutputAsExpected
+                  ? "Expected values auto-filled from your code execution."
+                  : "⚠️ Assumes your code is correct. Manually verify expected values."}
+              </p>
+            </div>
+          </div>
+          {lastGeneratedCount > 0 && (
+            <span className="text-[10px] text-slate-400 bg-slate-800/60 px-2 py-1 rounded-full">
+              Last: {lastGeneratedCount} cases generated
+            </span>
+          )}
+        </div>
 
         <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
           <label className="text-xs font-semibold text-slate-300 block">Add New Test Case</label>
@@ -236,13 +314,27 @@ export const Step5Testing = () => {
             No test cases yet. Add your first test case above to get started.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
+          <>
+            {/* Info banner */}
+            {lastGeneratedCount > 0 && (
+              <div className="flex items-center gap-2 text-xs text-cyan-300 bg-cyan-500/5 border border-cyan-500/15 px-4 py-2.5 rounded-xl mb-3">
+                <span className="text-sm">💡</span>
+                <span>
+                  {lastGeneratedCount} test cases generated from your problem analysis.
+                  {useCodeOutputAsExpected
+                    ? " Expected values auto-filled from your code. Edit any to test differently."
+                    : " Fill expected values manually to match your logic."}
+                </span>
+              </div>
+            )}
+            <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-900/50">
                   <th className="p-3.5">Test Case</th>
                   <th className="p-3.5">Input</th>
                   <th className="p-3.5">Expected Output</th>
+                  <th className="p-3.5">Source</th>
                   <th className="p-3.5">Status</th>
                   <th className="p-3.5">Actions</th>
                 </tr>
@@ -298,9 +390,16 @@ export const Step5Testing = () => {
                       </>
                     ) : (
                       <>
-                        <td className="p-3.5 font-semibold text-slate-200">{tc.name}</td>
-                        <td className="p-3.5 font-mono text-cyan-300">{tc.input}</td>
+                        <td className="p-3.5 font-semibold text-slate-200">
+                          <div className="flex items-center gap-2">
+                            {tc.name}
+                          </div>
+                        </td>
+                        <td className="p-3.5 font-mono text-cyan-300 whitespace-pre-wrap">{tc.input}</td>
                         <td className="p-3.5 font-mono text-emerald-300">{tc.expectedOutput}</td>
+                        <td className="p-3.5">
+                          <TestSourceBadge source={tc.source} />
+                        </td>
                         <td className="p-3.5">
                           {tc.status === "PASSED" && (
                             <span className="inline-flex items-center gap-1.5 text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[11px]">
@@ -351,6 +450,7 @@ export const Step5Testing = () => {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         <div className="flex justify-between pt-2">

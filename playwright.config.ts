@@ -12,11 +12,11 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3000",
     headless: false,
-    viewport: { width: 1440, height: 900 },
+    viewport: { width: 1280, height: 720 },
     screenshot: "only-on-failure",
     trace: "on-first-retry",
     launchOptions: {
-      slowMo: 1000,
+      slowMo: 300,
     },
   },
   webServer: {
