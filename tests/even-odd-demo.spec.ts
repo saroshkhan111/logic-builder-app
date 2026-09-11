@@ -1,4 +1,4 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 // Enable video recording + parallel mode for speed
 test.use({
@@ -6,11 +6,6 @@ test.use({
 });
 test.setTimeout(300_000);
 test.describe.configure({ mode: "parallel" });
-
-async function goToStepViaSidebar(page: Page, n: number) {
-  await page.getByRole("button", { name: new RegExp(`^${n}\\.`) }).click();
-  await expect(page.getByText(`STEP ${n}`)).toBeVisible();
-}
 
 test("Logic Builder - Even/Odd Problem Full 6-Step Demo", async ({ page }) => {
   // ──────────────────────────────────────────────
@@ -30,10 +25,6 @@ test("Logic Builder - Even/Odd Problem Full 6-Step Demo", async ({ page }) => {
     );
 
     // --- Inputs panel ---
-    const inputsPanel = page
-      .locator(".bg-slate-950\\/60")
-      .filter({ hasText: "Inputs" })
-      .first();
     const di = page.getByPlaceholder("e.g. num (Integer)");
     await di.fill("number (integer)", { timeout: 1500 });
     await di
