@@ -3,9 +3,9 @@
 import { AlertCircle, Check, CheckCircle2, Edit2, FileCode, Play, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { useState, useMemo } from "react";
 
-import { useLogicFlowStore } from "@/store/logicFlowStore";
-import { suggestFileNames } from "@/lib/fileNameSuggester";
 import { traceExecution, type DryRunResult } from "@/lib/dryRunVisualizer";
+import { suggestFileNames } from "@/lib/fileNameSuggester";
+import { useLogicFlowStore } from "@/store/logicFlowStore";
 
 export const Step4Code = () => {
   const {

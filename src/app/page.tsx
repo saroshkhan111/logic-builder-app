@@ -13,7 +13,7 @@ import { useLogicFlowStore } from "@/store/logicFlowStore";
 const STEPS = [
   { id: 1, name: "1. Problem Statement", desc: "Understand inputs, outputs & rules" },
   { id: 2, name: "2. Requirements", desc: "Tools, data & needed skills" },
-  { id: 3, name: "3. Algorithm Design", desc: "Pseudocode & flowcharts" },
+  { id: 3, name: "3. Algorithm Design", desc: "Algorithm & flowcharts" },
   { id: 4, name: "4. Code Writing", desc: "Write PEP 8 clean Python code" },
   { id: 5, name: "5. Testing", desc: "In-browser code execution & test cases" },
   { id: 6, name: "6. Optimization", desc: "Refactor for efficiency & readability" },
