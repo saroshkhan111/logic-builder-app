@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 import { analyzeCodeComplexity, getComplexityColor } from "@/lib/complexityAnalyzer";
 import { generateOptimizationSuggestions, getSeverityStyles } from "@/lib/optimizationEngine";
 import { runPythonCode } from "@/lib/pyodide/runner";
-import { useLogicFlowStore } from "@/store/logicFlowStore";
+import { isDefaultPythonCode, useLogicFlowStore } from "@/store/logicFlowStore";
 
 export const Step6Optimization = () => {
   const {
@@ -24,7 +24,7 @@ export const Step6Optimization = () => {
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
 
   useEffect(() => {
-    if (pythonCode && pythonCode !== "# Write your Python code here\n") {
+    if (pythonCode && !isDefaultPythonCode(pythonCode)) {
       setComplexityMetrics(analyzeCodeComplexity(pythonCode));
       setOptimizationSuggestions(generateOptimizationSuggestions(pythonCode));
     }
@@ -35,7 +35,7 @@ export const Step6Optimization = () => {
   };
 
   const handleRunBenchmark = async () => {
-    if (!pythonCode || pythonCode === "# Write your Python code here\n") return;
+    if (isDefaultPythonCode(pythonCode)) return;
     setIsBenchmarking(true);
     const runs = 10;
     let totalTime = 0;
@@ -95,7 +95,7 @@ export const Step6Optimization = () => {
     navigator.clipboard.writeText(`${window.location.origin}?share=${encoded}`);
   };
 
-  const completionScore = [problemStatement.trim(), inputs.length > 0, outputs.length > 0, algorithm.trim(), pythonCode !== "# Write your Python code here\n", testCases.length > 0].filter(Boolean).length;
+  const completionScore = [problemStatement.trim(), inputs.length > 0, outputs.length > 0, algorithm.trim(), !isDefaultPythonCode(pythonCode), testCases.length > 0].filter(Boolean).length;
 
   return (
     <div className="space-y-6">

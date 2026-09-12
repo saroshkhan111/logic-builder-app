@@ -8,6 +8,8 @@ import {
   detectInputType,
   generateValuesForInput,
   generateTestCases,
+  isHardcodedCode,
+  HARDCODED_CODE_WARNING,
   type ParsedCondition,
 } from "./smartTestGenerator";
 
@@ -532,5 +534,73 @@ describe("generateTestCases", () => {
     expect(result.testCases.some((tc) => tc.input.startsWith("1000"))).toBe(
       true
     );
+  });
+
+  it("warns when user code is hardcoded (no input() and no params)", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({
+      output: "8",
+      error: null,
+    });
+
+    const result = await generateTestCases(
+      ["a (number)", "b (number)"],
+      ["sum (number)"],
+      [],
+      "Add two numbers",
+      "a = 5\nb = 3\nprint(a + b)",
+      true
+    );
+
+    expect(result.warnings).toContain(HARDCODED_CODE_WARNING);
+    expect(result.testCases.length).toBeGreaterThan(0);
+  });
+
+  it("does not warn for input()-based or parameterized function code", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({
+      output: "8",
+      error: null,
+    });
+
+    const withInput = await generateTestCases(
+      ["a (number)"],
+      ["out"],
+      [],
+      "",
+      "x = int(input())\nprint(x)",
+      true
+    );
+    expect(withInput.warnings).not.toContain(HARDCODED_CODE_WARNING);
+
+    const withParams = await generateTestCases(
+      ["a (number)", "b (number)"],
+      ["out"],
+      [],
+      "",
+      "def add(a, b):\n    return a + b\n",
+      true
+    );
+    expect(withParams.warnings).not.toContain(HARDCODED_CODE_WARNING);
+  });
+});
+
+describe("isHardcodedCode", () => {
+  it("detects literal-only scripts", () => {
+    expect(isHardcodedCode("a = 5\nb = 3\nprint(a + b)")).toBe(true);
+    expect(isHardcodedCode("print(42)")).toBe(true);
+  });
+
+  it("accepts input() and parameterized defs as dynamic", () => {
+    expect(isHardcodedCode("n = int(input())\nprint(n)")).toBe(false);
+    expect(isHardcodedCode("def add(a, b):\n    return a + b\n")).toBe(false);
+    expect(isHardcodedCode("def main(*args):\n    return args\n")).toBe(false);
+  });
+
+  it("treats zero-param defs without input() as hardcoded", () => {
+    expect(isHardcodedCode("def main():\n    return 42\n")).toBe(true);
+  });
+
+  it("returns false for empty code", () => {
+    expect(isHardcodedCode("")).toBe(false);
+    expect(isHardcodedCode("   ")).toBe(false);
   });
 });

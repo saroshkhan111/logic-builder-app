@@ -1,4 +1,4 @@
-import { useLogicFlowStore } from "@/store/logicFlowStore";
+import { DEFAULT_PYTHON_CODE, useLogicFlowStore } from "@/store/logicFlowStore";
 
 const node = (id: string) => ({
   id,
@@ -16,6 +16,13 @@ describe("useLogicFlowStore", () => {
     const { nodes, edges } = useLogicFlowStore.getState();
     expect(nodes).toEqual([]);
     expect(edges).toEqual([]);
+  });
+
+  it("uses DEFAULT_PYTHON_CODE for the editor stub", () => {
+    expect(useLogicFlowStore.getState().pythonCode).toBe(DEFAULT_PYTHON_CODE);
+    useLogicFlowStore.getState().setPythonCode("print(1)");
+    useLogicFlowStore.getState().reset();
+    expect(useLogicFlowStore.getState().pythonCode).toBe(DEFAULT_PYTHON_CODE);
   });
 
   it("addNode appends and de-duplicates by id", () => {

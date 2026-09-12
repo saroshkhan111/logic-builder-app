@@ -251,36 +251,36 @@ export const buildExecutionScript = (
   testInput: string
 ): string => {
   if (funcName) {
-    return `
-import sys, io
-sys.stdout = io.StringIO()
-
-${pythonCode}
-
-try:
-    _result = ${funcName}(${testInput})
-    # Agar function ne return kiya aur print nahi kiya
-    if _result is not None:
-        _captured = sys.stdout.getvalue()
-        if not _captured.strip():
-            print(_result)
-    else:
-        _captured = sys.stdout.getvalue()
-except Exception as e:
-    print(f"ERROR: {e}")
-
-sys.stdout.getvalue()
-`.trimStart();
+    return [
+      "import sys, io",
+      "sys.stdout = io.StringIO()",
+      "",
+      pythonCode,
+      "",
+      "try:",
+      `    _result = ${funcName}(${testInput})`,
+      "    # Print return value only if function didn't print anything",
+      "    if _result is not None:",
+      "        _captured = sys.stdout.getvalue()",
+      "        if not _captured.strip():",
+      "            print(_result)",
+      "    else:",
+      "        _captured = sys.stdout.getvalue()",
+      "except Exception as e:",
+      '    print(f"ERROR: {e}")',
+      "",
+      "sys.stdout.getvalue()",
+    ].join("\n");
   }
 
-  return `
-import sys, io
-sys.stdout = io.StringIO()
-
-${pythonCode}
-
-sys.stdout.getvalue()
-`.trimStart();
+  return [
+    "import sys, io",
+    "sys.stdout = io.StringIO()",
+    "",
+    pythonCode,
+    "",
+    "sys.stdout.getvalue()",
+  ].join("\n");
 };
 
 /**

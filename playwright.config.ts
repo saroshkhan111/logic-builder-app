@@ -12,11 +12,21 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3000",
     headless: false,
-    viewport: { width: 1280, height: 720 },
+    viewport: { width: 1920, height: 1080 },
+    deviceScaleFactor: 2,
     screenshot: "only-on-failure",
     trace: "on-first-retry",
+    video: {
+      mode: "on",
+      size: { width: 1920, height: 1080 },
+    },
     launchOptions: {
       slowMo: 300,
+      args: [
+        "--force-device-scale-factor=2",
+        "--high-dpi-support=1",
+        "--disable-gpu-vsync",
+      ],
     },
   },
   webServer: {

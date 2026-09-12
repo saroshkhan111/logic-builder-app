@@ -5,6 +5,13 @@ import { persist } from "zustand/middleware";
 
 import type { LogicEdge, LogicNode, OptimizationSuggestion, ComplexityMetrics, BenchmarkResult } from "@/types/flow";
 
+/** Default editor contents before the user writes real code. */
+export const DEFAULT_PYTHON_CODE = "# Write your Python code here\n";
+
+/** True when the editor still has only the placeholder stub. */
+export const isDefaultPythonCode = (code: string | null | undefined): boolean =>
+  !code || code === DEFAULT_PYTHON_CODE;
+
 export type TestSource = "auto-generated" | "template" | "manual" | "invalid";
 
 export interface TestCase {
@@ -219,7 +226,7 @@ export const useLogicFlowStore = create<LogicFlowState>()(
   // Step 4 - Code
   fileName: "my_logic.py",
   setFileName: (name) => set({ fileName: name }),
-  pythonCode: "# Write your Python code here\n",
+  pythonCode: DEFAULT_PYTHON_CODE,
   setPythonCode: (code) => set({ pythonCode: code }),
   codeNotes: [],
   addCodeNote: (item) =>
@@ -328,7 +335,7 @@ export const useLogicFlowStore = create<LogicFlowState>()(
       algorithm: "",
       pseudocodeSteps: [],
       fileName: "my_logic.py",
-      pythonCode: "# Write your Python code here\n",
+      pythonCode: DEFAULT_PYTHON_CODE,
       codeNotes: [],
       testCases: [],
       isTesting: false,

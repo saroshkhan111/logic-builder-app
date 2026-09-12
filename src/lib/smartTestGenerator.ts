@@ -58,6 +58,41 @@ export interface SmartGenerationResult {
   testCases: SmartTestCase[];
   warnings: string[];
 }
+
+/** Warning shown when user code cannot vary by test input. */
+export const HARDCODED_CODE_WARNING =
+  "Your code doesn't accept inputs. Test cases will show same output. Use a function or input() for dynamic results.";
+
+/**
+ * True when the user's code cannot consume test inputs:
+ * - no `input()` call
+ * - no top-level function with parameters
+ *
+ * Typical shape: only top-level assignments/prints with literals.
+ */
+export function isHardcodedCode(code: string): boolean {
+  const trimmed = (code ?? "").trim();
+  if (!trimmed) return false;
+
+  // Dynamic via stdin
+  if (/\binput\s*\(/.test(trimmed)) return false;
+
+  // Dynamic via parameterized function(s)
+  const defPattern = /^def\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\(([^)]*)\)\s*:/gm;
+  let match: RegExpExecArray | null;
+  while ((match = defPattern.exec(trimmed)) !== null) {
+    const params = match[1]
+      .split(",")
+      .map((p) => p.trim())
+      .filter((p) => p !== "" && p !== "/")
+      .map((p) => p.split("=")[0].trim())
+      .filter((p) => p !== "");
+    if (params.length > 0) return false;
+  }
+
+  return true;
+}
+
 // Condition Parsing
 
 export function parseCondition(rule: string): ParsedCondition | null {
@@ -801,6 +836,11 @@ export async function generateTestCases(
   }
 
   const warnings: string[] = [];
+
+  if (pythonCode && pythonCode.trim() && isHardcodedCode(pythonCode)) {
+    warnings.push(HARDCODED_CODE_WARNING);
+  }
+
   if (executionFailureCount > 0) {
     warnings.push(
       "Could not execute code for some test cases. Fill their expected values manually."

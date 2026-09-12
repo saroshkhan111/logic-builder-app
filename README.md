@@ -112,10 +112,14 @@ Open [http://localhost:3000](http://localhost:3000).
 ### Python Engine (Optional)
 
 ```bash
-cd engine
+# Install Python deps (from repo root)
 uv sync
-fastapi run
+
+# Start the FastAPI validation server
+npm run py:api
 ```
+
+API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
