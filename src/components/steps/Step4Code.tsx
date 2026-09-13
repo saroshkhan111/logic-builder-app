@@ -3,6 +3,7 @@
 import { AlertCircle, Check, CheckCircle2, Edit2, FileCode, Play, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { useState, useMemo } from "react";
 
+import { ReferencePanel } from "@/components/steps/ReferencePanel";
 import { traceExecution, type DryRunResult } from "@/lib/dryRunVisualizer";
 import { suggestFileNames } from "@/lib/fileNameSuggester";
 import { useLogicFlowStore } from "@/store/logicFlowStore";
@@ -21,6 +22,11 @@ export const Step4Code = () => {
     problemStatement,
     inputs,
     outputs,
+    rules,
+    requiredData,
+    toolsFunctions,
+    logicalConcepts,
+    algorithm,
   } = useLogicFlowStore();
 
   const [noteInput, setNoteInput] = useState("");
@@ -67,6 +73,33 @@ export const Step4Code = () => {
           </p>
         </div>
 
+        <ReferencePanel
+          title="Steps 1-3 Reference"
+          items={[
+            {
+              label: "Problem Statement",
+              values: problemStatement
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean),
+              color: "indigo",
+            },
+            { label: "Inputs", values: inputs, color: "indigo" },
+            { label: "Outputs", values: outputs, color: "emerald" },
+            { label: "Rules", values: rules, color: "amber" },
+            { label: "Required Data", values: requiredData, color: "indigo" },
+            { label: "Tools & Functions", values: toolsFunctions, color: "amber" },
+            { label: "Logical Concepts", values: logicalConcepts, color: "emerald" },
+            {
+              label: "Algorithm",
+              values: algorithm
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean),
+              color: "sky",
+            },
+          ]}
+        />
         {/* PEP 8 File Naming Checker */}
         <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
           <label className="flex items-center gap-2 text-xs font-semibold text-slate-300">

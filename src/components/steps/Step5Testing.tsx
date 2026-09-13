@@ -3,6 +3,7 @@
 import { Check, CheckCircle2, Clock, Edit2, Play, Plus, RefreshCw, Trash2, TriangleAlert, Wand2, X, XCircle } from "lucide-react";
 import { useState } from "react";
 
+import { ReferencePanel } from "@/components/steps/ReferencePanel";
 import { TestSourceBadge } from "@/components/testing/TestSourceBadge";
 import { runSmartPythonCode } from "@/lib/pyodide/runner";
 import { generateTestCases } from "@/lib/smartTestGenerator";
@@ -16,6 +17,12 @@ export const Step5Testing = () => {
     outputs,
     rules,
     problemStatement,
+    requiredData,
+    toolsFunctions,
+    logicalConcepts,
+    algorithm,
+    fileName,
+    codeNotes,
     testCases,
     addTestCase,
     updateTestCase,
@@ -213,6 +220,35 @@ export const Step5Testing = () => {
           </div>
         </div>
 
+        <ReferencePanel
+          title="Steps 1-4 Reference"
+          items={[
+            {
+              label: "Problem Statement",
+              values: problemStatement
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean),
+              color: "indigo",
+            },
+            { label: "Inputs", values: inputs, color: "indigo" },
+            { label: "Outputs", values: outputs, color: "emerald" },
+            { label: "Rules", values: rules, color: "amber" },
+            { label: "Required Data", values: requiredData, color: "indigo" },
+            { label: "Tools & Functions", values: toolsFunctions, color: "amber" },
+            { label: "Logical Concepts", values: logicalConcepts, color: "emerald" },
+            {
+              label: "Algorithm",
+              values: algorithm
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean),
+              color: "sky",
+            },
+            { label: "File Name", values: [fileName], color: "sky" },
+            { label: "Code Notes", values: codeNotes, color: "violet" },
+          ]}
+        />
         {autoGenWarning && (
           <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">
             <XCircle className="w-3.5 h-3.5 shrink-0" />

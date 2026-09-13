@@ -3,11 +3,16 @@
 import { ArrowRight, Check, Edit2, Plus, Trash2, X } from "lucide-react";
 import React, { useState } from "react";
 
+import { ReferencePanel } from "@/components/steps/ReferencePanel";
 import { useLogicFlowStore } from "@/store/logicFlowStore";
 
 export const Step2Requirements = () => {
   const {
     setCurrentStep,
+    problemStatement,
+    inputs,
+    outputs,
+    rules,
     requiredData,
     addRequiredData,
     updateRequiredData,
@@ -83,6 +88,22 @@ export const Step2Requirements = () => {
           </p>
         </div>
 
+        <ReferencePanel
+          title="Step 1 Reference"
+          items={[
+            {
+              label: "Problem Statement",
+              values: problemStatement
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean),
+              color: "indigo",
+            },
+            { label: "Inputs", values: inputs, color: "indigo" },
+            { label: "Outputs", values: outputs, color: "emerald" },
+            { label: "Rules", values: rules, color: "amber" },
+          ]}
+        />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Required Data Panel */}
           <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-4">

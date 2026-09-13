@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { SyntaxChecker } from "@/components/algorithm/SyntaxChecker";
 import FlowChart from "@/components/flow/FlowChart";
+import { ReferencePanel } from "@/components/steps/ReferencePanel";
 import { analyzeWithAI, type AIAnalysisResult } from "@/lib/ai-syntax-checker";
 import { parseAlgorithm } from "@/lib/algorithmParser";
 import { applyFix } from "@/lib/algorithmSyntaxChecker";
@@ -15,6 +16,13 @@ import { useLogicFlowStore } from "@/store/logicFlowStore";
 export const Step3Algorithm = () => {
   const {
     setCurrentStep,
+    problemStatement,
+    inputs,
+    outputs,
+    rules,
+    requiredData,
+    toolsFunctions,
+    logicalConcepts,
     algorithm,
     setAlgorithm,
     pseudocodeSteps,
@@ -118,6 +126,25 @@ export const Step3Algorithm = () => {
           </p>
         </div>
 
+        <ReferencePanel
+          title="Steps 1-2 Reference"
+          items={[
+            {
+              label: "Problem Statement",
+              values: problemStatement
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean),
+              color: "indigo",
+            },
+            { label: "Inputs", values: inputs, color: "indigo" },
+            { label: "Outputs", values: outputs, color: "emerald" },
+            { label: "Rules", values: rules, color: "amber" },
+            { label: "Required Data", values: requiredData, color: "indigo" },
+            { label: "Tools & Functions", values: toolsFunctions, color: "amber" },
+            { label: "Logical Concepts", values: logicalConcepts, color: "emerald" },
+          ]}
+        />
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Column 1 - Algorithm Writer (60%) */}
           <div className="lg:col-span-3 bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
