@@ -56,6 +56,9 @@ __pycache__/
 *.tsbuildinfo
 next-env.d.ts
 
+# prisma
+prisma/.env
+
 # demo / recording artifacts
 *.mp4
 *.webm

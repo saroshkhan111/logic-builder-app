@@ -21,14 +21,21 @@
     "py:format": "uv run black python_engine",
     "py:check": "uv run black --check python_engine && uv run flake8 python_engine",
     "py:checks": "uv run python -m python_engine.scripts.run_checks",
-    "py:api": "uv run uvicorn python_engine.api.main:app --reload"
+    "py:api": "uv run uvicorn python_engine.api.main:app --reload",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.3",
     "@monaco-editor/react": "^4.7.0",
     "clsx": "^2.1.1",
     "framer-motion": "^13.2.0",
     "lucide-react": "^1.43.0",
     "next": "16.3.4",
+    "next-auth": "^5.0.0-beta.32",
     "pyodide": "^314.0.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -55,6 +62,7 @@
     "lint-staged": "^17.5.0",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
+    "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.0"

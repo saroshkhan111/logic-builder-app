@@ -2,9 +2,11 @@
 
 import {
   CheckCircle2, Copy, Download, Gauge, Lightbulb, ListChecks,
-  Play, Plus, RotateCcw, Share2, Sparkles, Timer, TrendingUp, Wand2, Zap,
+  Play, Plus, RotateCcw, Save, Share2, Sparkles, Timer, TrendingUp, Wand2, Zap,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+
+import { ProjectsAPI } from "@/lib/api/projects";
 
 import { analyzeCodeComplexity, getComplexityColor } from "@/lib/complexityAnalyzer";
 import { generateOptimizationSuggestions, getSeverityStyles } from "@/lib/optimizationEngine";
@@ -22,6 +24,8 @@ export const Step6Optimization = () => {
   const [ruleInput, setRuleInput] = useState("");
   const [isBenchmarking, setIsBenchmarking] = useState(false);
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
 
   useEffect(() => {
     if (pythonCode && !isDefaultPythonCode(pythonCode)) {
@@ -89,6 +93,40 @@ export const Step6Optimization = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleSaveProject = async () => {
+    setIsSaving(true);
+    setSaveStatus("idle");
+    
+    try {
+      const projectData = {
+        title: problemStatement || "Untitled Project",
+        problemStatement,
+        inputs,
+        outputs,
+        rules: optimizationRules,
+        algorithm,
+        pythonCode,
+        testCases,
+        completedSteps: 6,
+        isPublic: false,
+      };
+      
+      await ProjectsAPI.create(projectData);
+      setSaveStatus("success");
+      
+      // Reset status after 3 seconds
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    } catch (error) {
+      console.error("Failed to save project:", error);
+      setSaveStatus("error");
+      
+      // Reset status after 3 seconds
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCopyShareLink = () => {
     const state = useLogicFlowStore.getState();
     const encoded = btoa(JSON.stringify({ p: state.problemStatement, c: state.pythonCode, f: state.fileName }));
@@ -107,6 +145,21 @@ export const Step6Optimization = () => {
             <p className="text-xs text-slate-400 mt-1">AI-powered code analysis with actionable suggestions</p>
           </div>
           <div className="flex gap-2">
+            <button onClick={handleSaveProject} disabled={isSaving} className={`px-3 py-1.5 text-white text-xs rounded-lg flex items-center gap-1.5 cursor-pointer ${
+              saveStatus === "success" ? "bg-emerald-600 hover:bg-emerald-500" :
+              saveStatus === "error" ? "bg-red-600 hover:bg-red-500" :
+              "bg-violet-600 hover:bg-violet-500"
+            } disabled:opacity-50 disabled:cursor-not-allowed`}>
+              {isSaving ? (
+                <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
+              ) : saveStatus === "success" ? (
+                <><CheckCircle2 className="w-3.5 h-3.5" /> Saved!</>
+              ) : saveStatus === "error" ? (
+                <><Zap className="w-3.5 h-3.5" /> Failed</>
+              ) : (
+                <><Save className="w-3.5 h-3.5" /> Save Project</>
+              )}
+            </button>
             <button onClick={handleExportReport} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg flex items-center gap-1.5 cursor-pointer"><Download className="w-3.5 h-3.5" /> Export</button>
             <button onClick={handleCopyShareLink} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg flex items-center gap-1.5 cursor-pointer"><Share2 className="w-3.5 h-3.5" /> Share</button>
             <button onClick={handleDownloadPython} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg flex items-center gap-1.5 cursor-pointer"><Copy className="w-3.5 h-3.5" /> .py</button>

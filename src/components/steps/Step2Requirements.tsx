@@ -145,6 +145,9 @@ export const Step2Requirements = () => {
                   </div>
                 ) : (
                   <span key={idx} className="inline-flex items-center gap-2 bg-indigo-950/50 border border-indigo-800/60 text-indigo-300 px-2.5 py-1 rounded-lg text-xs font-mono">
+                    <span className="text-indigo-400 font-mono font-bold mr-1">
+                      {idx + 1}.
+                    </span>
                     {item}
                     <button onClick={() => { setEditingDataIdx(idx); setEditDataValue(item); }} className="text-indigo-400 hover:text-white cursor-pointer">
                       <Edit2 className="w-3 h-3" />
@@ -198,6 +201,9 @@ export const Step2Requirements = () => {
                   </div>
                 ) : (
                   <span key={idx} className="inline-flex items-center gap-2 bg-amber-950/50 border border-amber-800/60 text-amber-300 px-2.5 py-1 rounded-lg text-xs font-mono">
+                    <span className="text-indigo-400 font-mono font-bold mr-1">
+                      {idx + 1}.
+                    </span>
                     {item}
                     <button onClick={() => { setEditingToolIdx(idx); setEditToolValue(item); }} className="text-amber-400 hover:text-white cursor-pointer">
                       <Edit2 className="w-3 h-3" />
@@ -251,6 +257,9 @@ export const Step2Requirements = () => {
                   </div>
                 ) : (
                   <span key={idx} className="inline-flex items-center gap-2 bg-emerald-950/50 border border-emerald-800/60 text-emerald-300 px-2.5 py-1 rounded-lg text-xs font-mono">
+                    <span className="text-indigo-400 font-mono font-bold mr-1">
+                      {idx + 1}.
+                    </span>
                     {item}
                     <button onClick={() => { setEditingSkillIdx(idx); setEditSkillValue(item); }} className="text-emerald-400 hover:text-white cursor-pointer">
                       <Edit2 className="w-3 h-3" />
