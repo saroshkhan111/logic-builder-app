@@ -7,7 +7,6 @@ import {
 import { useState, useEffect } from "react";
 
 import { ProjectsAPI } from "@/lib/api/projects";
-
 import { analyzeCodeComplexity, getComplexityColor } from "@/lib/complexityAnalyzer";
 import { generateOptimizationSuggestions, getSeverityStyles } from "@/lib/optimizationEngine";
 import { runPythonCode } from "@/lib/pyodide/runner";

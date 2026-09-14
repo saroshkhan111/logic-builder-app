@@ -8,5 +8,6 @@
   "editor.formatOnSave": true,
   "files.associations": {
     "*.css": "tailwindcss"
-  }
+  },
+  "python.terminal.useEnvFile": true
 }

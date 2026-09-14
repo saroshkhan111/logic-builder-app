@@ -148,6 +148,29 @@ describe('analyzeWithAI', () => {
     expect(result.overallFeedback).toBe('Perfect!');
   });
 
+  it('handles raw newlines inside JSON string values', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: async () => ({
+        choices: [{
+          message: {
+            // Literal newlines inside the "message" and "overallFeedback"
+            // strings — the exact case that makes JSON.parse throw
+            // "Bad control character in string literal in JSON".
+            content: '{"issues":[{"lineNumber":2,"severity":"error","message":"First line\nSecond line","suggestion":"Fix it","type":"structure"}],"overallFeedback":"Almost\ngreat!","complexity":"medium"}',
+          },
+        }],
+      }),
+    });
+
+    const result = await analyzeWithAI('START\nDISPLAY\nEND');
+    expect(result.aiAnalyzed).toBe(true);
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].message).toBe('First line\nSecond line');
+    expect(result.overallFeedback).toBe('Almost\ngreat!');
+  });
+
   it('filters out invalid issues from response', async () => {
     mockFetch.mockResolvedValueOnce({
       status: 200,

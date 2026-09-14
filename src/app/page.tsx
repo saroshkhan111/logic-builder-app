@@ -1,7 +1,8 @@
 "use client";
 
-import { BrainCircuit, CheckCircle2, Sparkles } from "lucide-react";
+import { BrainCircuit, CheckCircle2, MessageSquare, Sparkles } from "lucide-react";
 
+import { AIGuideSidebar } from "@/components/AIGuide";
 import { Step1Problem } from "@/components/steps/Step1Problem";
 import { Step2Requirements } from "@/components/steps/Step2Requirements";
 import { Step3Algorithm } from "@/components/steps/Step3Algorithm";
@@ -20,7 +21,7 @@ const STEPS = [
 ];
 
 export default function HomePage() {
-  const { currentStep, setCurrentStep } = useLogicFlowStore();
+  const { currentStep, setCurrentStep, aiGuideEnabled, setAIGuideEnabled } = useLogicFlowStore();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -35,8 +36,21 @@ export default function HomePage() {
             <p className="text-xs text-slate-400">Step-by-Step Problem Solving for Beginners</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3 py-1.5 rounded-full">
-          <Sparkles className="w-3.5 h-3.5" /> Beginner Guided Mode
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setAIGuideEnabled(!aiGuideEnabled)}
+            className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full transition-all cursor-pointer ${
+              aiGuideEnabled
+                ? "bg-indigo-600 text-white shadow-lg"
+                : "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20"
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            AI Guide
+          </button>
+          <div className="flex items-center gap-2 text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3 py-1.5 rounded-full">
+            <Sparkles className="w-3.5 h-3.5" /> Beginner Guided Mode
+          </div>
         </div>
       </header>
 
@@ -81,6 +95,9 @@ export default function HomePage() {
           {currentStep === 5 && <Step5Testing />}
           {currentStep === 6 && <Step6Optimization />}
         </main>
+
+        {/* AI Guide Sidebar - Conditionally Rendered */}
+        {aiGuideEnabled && <AIGuideSidebar />}
       </div>
     </div>
   );

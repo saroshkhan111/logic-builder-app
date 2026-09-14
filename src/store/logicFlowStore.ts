@@ -28,6 +28,8 @@ interface LogicFlowState {
   // Navigation
   currentStep: number;
   setCurrentStep: (step: number) => void;
+  aiGuideEnabled: boolean;
+  setAIGuideEnabled: (enabled: boolean) => void;
 
   // Step 1 - Problem Statement
   problemStatement: string;
@@ -124,6 +126,8 @@ export const useLogicFlowStore = create<LogicFlowState>()(
   // Navigation
   currentStep: 1,
   setCurrentStep: (step) => set({ currentStep: step }),
+  aiGuideEnabled: false,
+  setAIGuideEnabled: (enabled) => set({ aiGuideEnabled: enabled }),
 
   // Step 1 - Problem Statement
   problemStatement: "",
@@ -346,6 +350,7 @@ export const useLogicFlowStore = create<LogicFlowState>()(
       nodes: [],
       edges: [],
       activeNodeId: null,
+      aiGuideEnabled: false,
     }),
     }),
     {

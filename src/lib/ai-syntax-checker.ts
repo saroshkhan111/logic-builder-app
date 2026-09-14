@@ -108,6 +108,66 @@ async function callMistralAPI(algorithm: string): Promise<{
 // RESPONSE PARSER
 // ============================================================
 
+/**
+ * Escapes raw control characters (e.g. literal newlines, tabs) that appear
+ * inside JSON string values. LLMs frequently emit unescaped newlines inside
+ * multi-line "message" / "overallFeedback" strings, and `JSON.parse` rejects
+ * any raw control character inside a string literal. Whitespace between JSON
+ * tokens is left untouched.
+ */
+function sanitizeJsonControlChars(input: string): string {
+  const escapeMap: Record<string, string> = {
+    '\n': '\\n',
+    '\r': '\\r',
+    '\t': '\\t',
+    '\b': '\\b',
+    '\f': '\\f',
+  };
+
+  let result = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+
+    if (!inString) {
+      if (ch === '"') inString = true;
+      result += ch;
+      continue;
+    }
+
+    // Inside a JSON string literal.
+    if (escaped) {
+      result += ch;
+      escaped = false;
+      continue;
+    }
+
+    if (ch === '\\') {
+      result += ch;
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = false;
+      result += ch;
+      continue;
+    }
+
+    if (ch.charCodeAt(0) < 0x20) {
+      result +=
+        escapeMap[ch] ?? `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`;
+      continue;
+    }
+
+    result += ch;
+  }
+
+  return result;
+}
+
 function parseMistralResponse(content: string): {
   issues: SyntaxIssue[];
   overallFeedback: string;
@@ -120,7 +180,7 @@ function parseMistralResponse(content: string): {
     if (cleaned.startsWith(tripleBt)) {
       cleaned = cleaned.replace(new RegExp('^' + tripleBt + '(?:json)?\\s*'), '').replace(new RegExp('\\s*' + tripleBt + '$'), '');
     }
-    const parsed = JSON.parse(cleaned);
+    const parsed = JSON.parse(sanitizeJsonControlChars(cleaned));
     if (!Array.isArray(parsed.issues)) return null;
 
     const validSeverities = new Set(['error', 'warning', 'info']);
