@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowRight, Check, Edit2, Plus, Trash2, X } from "lucide-react";
+import { Check, Edit2, Plus, Trash2, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
+import { StepFieldValidation } from "@/components/validation/StepFieldValidation";
 import { useLogicFlowStore } from "@/store/logicFlowStore";
 
 export const Step1Problem = () => {
@@ -288,15 +289,23 @@ export const Step1Problem = () => {
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-end pt-2">
-          <button
-            onClick={() => setCurrentStep(2)}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
-          >
-            Next: Requirements Analysis <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+        {/* AI sequence check + navigation */}
+        <StepFieldValidation
+          step={1}
+          problemStatement={problemStatement}
+          fields={[
+            {
+              key: "problemStatement",
+              label: "Problem Statement",
+              value: problemStatement,
+            },
+            { key: "inputs", label: "Inputs", value: inputs.join(", ") },
+            { key: "outputs", label: "Outputs", value: outputs.join(", ") },
+            { key: "rules", label: "Rules", value: rules.join(", ") },
+          ]}
+          continueLabel="Next: Requirements Analysis"
+          onContinue={() => setCurrentStep(2)}
+        />
       </div>
     </div>
   );

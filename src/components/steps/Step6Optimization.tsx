@@ -2,10 +2,11 @@
 
 import {
   CheckCircle2, Copy, Download, Gauge, Lightbulb, ListChecks,
-  Play, Plus, RotateCcw, Save, Share2, Sparkles, Timer, TrendingUp, Wand2, Zap,
+  Play, Plus, Save, Share2, Sparkles, Timer, TrendingUp, Wand2, Zap,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
+import { StepFieldValidation } from "@/components/validation/StepFieldValidation";
 import { ProjectsAPI } from "@/lib/api/projects";
 import { analyzeCodeComplexity, getComplexityColor } from "@/lib/complexityAnalyzer";
 import { generateOptimizationSuggestions, getSeverityStyles } from "@/lib/optimizationEngine";
@@ -254,10 +255,25 @@ export const Step6Optimization = () => {
         <div className="flex flex-wrap gap-2">{optimizationRules.map((rule, idx) => (<div key={idx} className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /><span className="text-slate-300">{rule}</span></div>))}</div>
       </div>
 
-      <div className="flex justify-between pt-2">
-        <button onClick={() => setCurrentStep(5)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-2 cursor-pointer">Back to Step 5</button>
-        <button onClick={() => { reset(); setCurrentStep(1); }} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-2 cursor-pointer"><RotateCcw className="w-4 h-4" /> Start a New Problem</button>
-      </div>
+      {/* AI sequence check + navigation */}
+      <StepFieldValidation
+        step={6}
+        problemStatement={problemStatement}
+        fields={[
+          {
+            key: "optimizationRules",
+            label: "Optimization",
+            value: optimizationRules.join("; "),
+          },
+        ]}
+        backLabel="Back to Step 5"
+        onBack={() => setCurrentStep(5)}
+        continueLabel="Start a New Problem"
+        onContinue={() => {
+          reset();
+          setCurrentStep(1);
+        }}
+      />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { AlertCircle, Check, CheckCircle2, Edit2, FileCode, Play, Plus, Sparkles
 import { useState, useMemo } from "react";
 
 import { ReferencePanel } from "@/components/steps/ReferencePanel";
+import { StepFieldValidation } from "@/components/validation/StepFieldValidation";
 import { traceExecution, type DryRunResult } from "@/lib/dryRunVisualizer";
 import { suggestFileNames } from "@/lib/fileNameSuggester";
 import { useLogicFlowStore } from "@/store/logicFlowStore";
@@ -350,21 +351,24 @@ export const Step4Code = () => {
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between pt-2">
-          <button
-            onClick={() => setCurrentStep(3)}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-          >
-            Back to Step 3
-          </button>
-          <button
-            onClick={() => setCurrentStep(5)}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
-          >
-            Next: Testing
-          </button>
-        </div>
+        {/* AI sequence check + navigation */}
+        <StepFieldValidation
+          step={4}
+          problemStatement={problemStatement}
+          fields={[
+            { key: "fileName", label: "File Name", value: fileName },
+            { key: "pythonCode", label: "Python Code", value: pythonCode },
+            {
+              key: "codeNotes",
+              label: "Code Notes",
+              value: codeNotes.join("; "),
+            },
+          ]}
+          backLabel="Back to Step 3"
+          onBack={() => setCurrentStep(3)}
+          continueLabel="Next: Testing"
+          onContinue={() => setCurrentStep(5)}
+        />
       </div>
     </div>
   );

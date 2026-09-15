@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowRight, Check, Edit2, Plus, Trash2, X } from "lucide-react";
+import { Check, Edit2, Plus, Trash2, X } from "lucide-react";
 import React, { useState } from "react";
 
 import { ReferencePanel } from "@/components/steps/ReferencePanel";
+import { StepFieldValidation } from "@/components/validation/StepFieldValidation";
 import { useLogicFlowStore } from "@/store/logicFlowStore";
 
 export const Step2Requirements = () => {
@@ -274,21 +275,32 @@ export const Step2Requirements = () => {
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between pt-2">
-          <button
-            onClick={() => setCurrentStep(1)}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-          >
-            Back to Step 1
-          </button>
-          <button
-            onClick={() => setCurrentStep(3)}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
-          >
-            Next: Algorithm Design <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+        {/* AI sequence check + navigation */}
+        <StepFieldValidation
+          step={2}
+          problemStatement={problemStatement}
+          fields={[
+            {
+              key: "requiredData",
+              label: "Required Data",
+              value: requiredData.join(", "),
+            },
+            {
+              key: "toolsFunctions",
+              label: "Tools & Functions",
+              value: toolsFunctions.join(", "),
+            },
+            {
+              key: "logicalConcepts",
+              label: "Logical Concepts",
+              value: logicalConcepts.join(", "),
+            },
+          ]}
+          backLabel="Back to Step 1"
+          onBack={() => setCurrentStep(1)}
+          continueLabel="Next: Algorithm Design"
+          onContinue={() => setCurrentStep(3)}
+        />
       </div>
     </div>
   );

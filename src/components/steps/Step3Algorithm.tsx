@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { SyntaxChecker } from "@/components/algorithm/SyntaxChecker";
 import FlowChart from "@/components/flow/FlowChart";
 import { ReferencePanel } from "@/components/steps/ReferencePanel";
+import { StepFieldValidation } from "@/components/validation/StepFieldValidation";
 import { analyzeWithAI, type AIAnalysisResult } from "@/lib/ai-syntax-checker";
 import { parseAlgorithm } from "@/lib/algorithmParser";
 import { applyFix } from "@/lib/algorithmSyntaxChecker";
@@ -50,6 +51,7 @@ export const Step3Algorithm = () => {
   const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult>({
     issues: [],
     overallFeedback: 'Start writing your algorithm to see feedback.',
+    correction: '',
     complexity: 'simple',
     aiAnalyzed: false,
   });
@@ -63,6 +65,7 @@ export const Step3Algorithm = () => {
         setAnalysisResult({
           issues: [],
           overallFeedback: 'Start writing your algorithm to see feedback.',
+          correction: '',
           complexity: 'simple',
           aiAnalyzed: false,
         });
@@ -211,27 +214,25 @@ export const Step3Algorithm = () => {
               onFix={handleFixIssue}
               isLoading={isAnalyzing}
               overallFeedback={analysisResult.overallFeedback}
+              correction={analysisResult.correction}
               aiAnalyzed={analysisResult.aiAnalyzed}
               complexity={analysisResult.complexity}
             />
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between pt-2">
-          <button
-            onClick={() => setCurrentStep(2)}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-          >
-            Back to Step 2
-          </button>
-          <button
-            onClick={() => setCurrentStep(4)}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
-          >
-            Next: Code Writing
-          </button>
-        </div>
+        {/* AI sequence check + navigation */}
+        <StepFieldValidation
+          step={3}
+          problemStatement={problemStatement}
+          fields={[
+            { key: "algorithm", label: "Algorithm", value: algorithm },
+          ]}
+          backLabel="Back to Step 2"
+          onBack={() => setCurrentStep(2)}
+          continueLabel="Next: Code Writing"
+          onContinue={() => setCurrentStep(4)}
+        />
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { ReferencePanel } from "@/components/steps/ReferencePanel";
 import { TestSourceBadge } from "@/components/testing/TestSourceBadge";
+import { StepFieldValidation } from "@/components/validation/StepFieldValidation";
 import { runSmartPythonCode } from "@/lib/pyodide/runner";
 import { generateTestCases } from "@/lib/smartTestGenerator";
 import { useLogicFlowStore, type TestCase } from "@/store/logicFlowStore";
@@ -489,20 +490,27 @@ export const Step5Testing = () => {
           </>
         )}
 
-        <div className="flex justify-between pt-2">
-          <button
-            onClick={() => setCurrentStep(4)}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-          >
-            Back to Step 4
-          </button>
-          <button
-            onClick={() => setCurrentStep(6)}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
-          >
-            Next: Optimization
-          </button>
-        </div>
+        {/* AI sequence check + navigation */}
+        <StepFieldValidation
+          step={5}
+          problemStatement={problemStatement}
+          fields={[
+            {
+              key: "testCases",
+              label: "Test Cases",
+              value: testCases
+                .map(
+                  (tc) =>
+                    `${tc.name}: input=${tc.input} → expected=${tc.expectedOutput}`
+                )
+                .join("; "),
+            },
+          ]}
+          backLabel="Back to Step 4"
+          onBack={() => setCurrentStep(4)}
+          continueLabel="Next: Optimization"
+          onContinue={() => setCurrentStep(6)}
+        />
       </div>
     </div>
   );
