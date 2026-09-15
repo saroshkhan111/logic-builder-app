@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, Loader2, Wrench } from "lucide-react";
 
+import { hasCorrection } from "@/lib/aiChatResponse";
 import type { SyntaxIssue } from "@/lib/algorithmSyntaxChecker";
 
 interface Props {
@@ -10,6 +11,8 @@ interface Props {
   onFix: (issue: SyntaxIssue) => void;
   isLoading?: boolean;
   overallFeedback?: string;
+  /** What the learner did wrong + how to fix it + an example (from the AI). */
+  correction?: string;
   aiAnalyzed?: boolean;
   complexity?: 'simple' | 'medium' | 'complex';
 }
@@ -38,7 +41,7 @@ const SEVERITY_CONFIG = {
   },
 } as const;
 
-export function SyntaxChecker({ issues, onFix, isLoading, overallFeedback, aiAnalyzed, complexity }: Props) {
+export function SyntaxChecker({ issues, onFix, isLoading, overallFeedback, correction, aiAnalyzed, complexity }: Props) {
   const errorCount = issues.filter(i => i.severity === "error").length;
   const warningCount = issues.filter(i => i.severity === "warning").length;
   const infoCount = issues.filter(i => i.severity === "info").length;
@@ -92,6 +95,16 @@ export function SyntaxChecker({ issues, onFix, isLoading, overallFeedback, aiAna
       {!isLoading && overallFeedback && (
         <div className="text-xs text-slate-300 bg-slate-900/60 border border-slate-800 rounded-lg p-2.5">
           💬 {overallFeedback}
+        </div>
+      )}
+
+      {/* AI Correction — what went wrong, how to fix it, and an example */}
+      {!isLoading && hasCorrection(correction) && (
+        <div className="text-xs bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5 space-y-1">
+          <span className="block font-bold text-amber-400">🔧 Correction</span>
+          <span className="block text-slate-200 leading-relaxed whitespace-pre-wrap">
+            {correction}
+          </span>
         </div>
       )}
 

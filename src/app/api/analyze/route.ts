@@ -26,6 +26,8 @@ function buildPrompt(algorithm: string): string {
     '2. Beginner-friendly explanations',
     '3. Give line numbers (1-indexed)',
     '4. Be encouraging',
+    '5. Always fill "correction": say what the learner did wrong, how to fix it,',
+    '   and one short example of the correct approach. Use "" if nothing is wrong.',
     '',
     'CHECK FOR:',
     '- Missing keywords (THEN, ENDIF, END, FI)',
@@ -49,6 +51,7 @@ function buildPrompt(algorithm: string): string {
     '    }',
     '  ],',
     '  "overallFeedback": "One encouraging sentence",',
+    '  "correction": "What the learner did wrong + how to fix it + one tiny example of the correct approach (simple English, 2-3 sentences). Empty string when there is no mistake.",',
     '  "complexity": "simple" | "medium" | "complex"',
     '}',
   ].join('\n');

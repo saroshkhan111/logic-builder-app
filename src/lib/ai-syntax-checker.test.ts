@@ -33,6 +33,53 @@ describe('analyzeWithAI', () => {
     expect(result.aiAnalyzed).toBe(false);
     // Static checker should find missing THEN
     expect(result.issues.length).toBeGreaterThan(0);
+    // No AI → no learner-specific correction
+    expect(result.correction).toBe('');
+  });
+
+  it('returns empty correction when the AI reports no mistake', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: async () => ({
+        choices: [{
+          message: {
+            content: JSON.stringify({
+              issues: [],
+              overallFeedback: 'Perfect!',
+              correction: '',
+              complexity: 'simple',
+            }),
+          },
+        }],
+      }),
+    });
+
+    const result = await analyzeWithAI('START\nDISPLAY "Hello"\nEND');
+    expect(result.aiAnalyzed).toBe(true);
+    expect(result.correction).toBe('');
+  });
+
+  it('treats placeholder corrections as no correction', async () => {
+    mockFetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: async () => ({
+        choices: [{
+          message: {
+            content: JSON.stringify({
+              issues: [],
+              overallFeedback: 'Nice work!',
+              correction: 'none',
+              complexity: 'simple',
+            }),
+          },
+        }],
+      }),
+    });
+
+    const result = await analyzeWithAI('START\nDISPLAY "Hello"\nEND');
+    expect(result.correction).toBe('');
   });
 
   it('uses cache on repeated calls with same algorithm', async () => {
@@ -64,6 +111,7 @@ describe('analyzeWithAI', () => {
                 type: 'structure',
               }],
               overallFeedback: 'Good!',
+              correction: 'Tumne string choose kiya. Even/odd ke liye integer chahiye.',
               complexity: 'medium',
             }),
           },
@@ -77,6 +125,9 @@ describe('analyzeWithAI', () => {
     expect(result.issues[0].message).toBe('Missing THEN');
     expect(result.complexity).toBe('medium');
     expect(result.overallFeedback).toBe('Good!');
+    expect(result.correction).toBe(
+      'Tumne string choose kiya. Even/odd ke liye integer chahiye.'
+    );
   });
 
   it('falls back when API returns non-ok status', async () => {

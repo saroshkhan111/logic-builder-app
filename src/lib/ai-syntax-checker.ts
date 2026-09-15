@@ -9,6 +9,7 @@
  * 3. Result cached client-side for 5 minutes
  */
 
+import { normalizeCorrection } from './aiChatResponse';
 import type { SyntaxIssue } from './algorithmSyntaxChecker';
 import { checkAlgorithmSyntax } from './algorithmSyntaxChecker';
 
@@ -19,6 +20,12 @@ import { checkAlgorithmSyntax } from './algorithmSyntaxChecker';
 export interface AIAnalysisResult {
   issues: SyntaxIssue[];
   overallFeedback: string;
+  /**
+   * What the learner did wrong + how to fix it + one example of the correct
+   * approach. Empty string when the AI found no mistake (or when the static
+   * fallback ran).
+   */
+  correction: string;
   complexity: 'simple' | 'medium' | 'complex';
   aiAnalyzed: boolean;
   cached?: boolean;
@@ -67,6 +74,7 @@ function setCache(algorithm: string, result: AIAnalysisResult): void {
 async function callMistralAPI(algorithm: string): Promise<{
   issues: SyntaxIssue[];
   overallFeedback: string;
+  correction: string;
   complexity: 'simple' | 'medium' | 'complex';
 } | null> {
   try {
@@ -171,6 +179,7 @@ function sanitizeJsonControlChars(input: string): string {
 function parseMistralResponse(content: string): {
   issues: SyntaxIssue[];
   overallFeedback: string;
+  correction: string;
   complexity: 'simple' | 'medium' | 'complex';
 } | null {
   try {
@@ -216,6 +225,7 @@ function parseMistralResponse(content: string): {
     return {
       issues,
       overallFeedback: String(parsed.overallFeedback || 'Algorithm checked.'),
+      correction: normalizeCorrection(parsed.correction),
       complexity,
     };
   } catch {
@@ -234,6 +244,8 @@ function fallbackToStatic(algorithm: string): AIAnalysisResult {
     overallFeedback: staticIssues.length === 0
       ? '✅ No syntax issues found. Your algorithm looks good!'
       : `Found ${staticIssues.length} issue${staticIssues.length !== 1 ? 's' : ''}. Review them below.`,
+    // AI did not run, so there is no learner-specific correction to show.
+    correction: '',
     complexity: 'simple',
     aiAnalyzed: false,
   };
@@ -249,6 +261,7 @@ export async function analyzeWithAI(algorithm: string): Promise<AIAnalysisResult
     return {
       issues: [],
       overallFeedback: 'Start writing your algorithm to see feedback.',
+      correction: '',
       complexity: 'simple',
       aiAnalyzed: false,
     };
@@ -271,6 +284,7 @@ export async function analyzeWithAI(algorithm: string): Promise<AIAnalysisResult
   const result: AIAnalysisResult = {
     issues: aiResult.issues,
     overallFeedback: aiResult.overallFeedback,
+    correction: aiResult.correction,
     complexity: aiResult.complexity,
     aiAnalyzed: true,
   };
