@@ -8,17 +8,18 @@ import type { Project } from '@prisma/client';
 export interface CreateProjectData {
   title?: string;
   problemStatement?: string;
-  inputs?: any[];
-  outputs?: any[];
-  rules?: any[];
+  inputs?: string[];
+  outputs?: string[];
+  rules?: string[];
   algorithm?: string | null;
   pythonCode?: string | null;
-  testCases?: any | null;
+  /** Prisma `Json` column: any JSON-serializable test-case payload. */
+  testCases?: unknown | null;
   completedSteps?: number;
   isPublic?: boolean;
 }
 
-export interface UpdateProjectData extends Partial<CreateProjectData> {}
+export type UpdateProjectData = Partial<CreateProjectData>;
 
 export class ProjectsAPI {
   /**

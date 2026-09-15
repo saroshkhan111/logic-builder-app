@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
@@ -64,7 +65,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     }
 
     // Build update data object (only include provided fields)
-    const updateData: any = {};
+    const updateData: Prisma.ProjectUpdateInput = {};
 
     if (body.title !== undefined) updateData.title = body.title;
     if (body.problemStatement !== undefined)

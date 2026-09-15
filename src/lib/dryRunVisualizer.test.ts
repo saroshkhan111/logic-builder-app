@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  traceExecution,
-  formatDryRun,
-  type DryRunResult,
-  type DryRunStep,
-} from "./dryRunVisualizer";
+import { formatDryRun, traceExecution } from "./dryRunVisualizer";
 
 describe("traceExecution", () => {
   it("traces simple variable assignments", () => {
