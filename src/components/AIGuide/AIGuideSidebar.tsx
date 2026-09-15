@@ -1,14 +1,22 @@
 "use client";
 
-import { BookOpen, ChevronDown, ChevronUp, MessageSquare, X } from "lucide-react";
+import {
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  ListChecks,
+  MessageSquare,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 
 import { useLogicFlowStore } from "@/store/logicFlowStore";
 
 import { AIChat } from "./AIChat";
+import { MCQQuiz } from "./MCQQuiz";
 import { StepTips } from "./StepTips";
 
-type ActiveTab = "tips" | "chat";
+type ActiveTab = "tips" | "chat" | "quiz";
 
 export const AIGuideSidebar = () => {
   const { setAIGuideEnabled } = useLogicFlowStore();
@@ -16,33 +24,33 @@ export const AIGuideSidebar = () => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <aside className="w-80 border-l border-slate-800 bg-slate-900/50 flex flex-col h-full">
+    <aside className="flex h-full w-80 flex-col border-l border-slate-800 bg-slate-900/50">
       {/* Header */}
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-slate-800 p-4">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-indigo-600 rounded-lg">
-            <MessageSquare className="w-4 h-4 text-white" />
+          <div className="rounded-lg bg-indigo-600 p-1.5">
+            <MessageSquare className="h-4 w-4 text-white" />
           </div>
           <h2 className="font-semibold text-white">AI Guide</h2>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
             title={isExpanded ? "Collapse" : "Expand"}
           >
             {isExpanded ? (
-              <ChevronUp className="w-4 h-4" />
+              <ChevronUp className="h-4 w-4" />
             ) : (
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDown className="h-4 w-4" />
             )}
           </button>
           <button
             onClick={() => setAIGuideEnabled(false)}
-            className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
             title="Close AI Guide"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -53,25 +61,36 @@ export const AIGuideSidebar = () => {
           <div className="flex border-b border-slate-800">
             <button
               onClick={() => setActiveTab("tips")}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
                 activeTab === "tips"
-                  ? "text-indigo-400 border-b-2 border-indigo-400 bg-slate-900/50"
+                  ? "border-b-2 border-indigo-400 bg-slate-900/50 text-indigo-400"
                   : "text-slate-400 hover:text-slate-300"
               }`}
             >
-              <BookOpen className="w-4 h-4" />
+              <BookOpen className="h-4 w-4" />
               Tips
             </button>
             <button
               onClick={() => setActiveTab("chat")}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
                 activeTab === "chat"
-                  ? "text-indigo-400 border-b-2 border-indigo-400 bg-slate-900/50"
+                  ? "border-b-2 border-indigo-400 bg-slate-900/50 text-indigo-400"
                   : "text-slate-400 hover:text-slate-300"
               }`}
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="h-4 w-4" />
               Chat
+            </button>
+            <button
+              onClick={() => setActiveTab("quiz")}
+              className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                activeTab === "quiz"
+                  ? "border-b-2 border-indigo-400 bg-slate-900/50 text-indigo-400"
+                  : "text-slate-400 hover:text-slate-300"
+              }`}
+            >
+              <ListChecks className="h-4 w-4" />
+              Quiz
             </button>
           </div>
 
@@ -79,6 +98,7 @@ export const AIGuideSidebar = () => {
           <div className="flex-1 overflow-y-auto p-4">
             {activeTab === "tips" && <StepTips />}
             {activeTab === "chat" && <AIChat />}
+            {activeTab === "quiz" && <MCQQuiz />}
           </div>
         </>
       )}
