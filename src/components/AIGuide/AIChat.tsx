@@ -3,12 +3,15 @@
 import { Bot, Loader2, Send, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { hasCorrection } from "@/lib/aiChatResponse";
 import { useLogicFlowStore } from "@/store/logicFlowStore";
 
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  /** What the learner did wrong + how to fix it + an example (assistant only). */
+  correction?: string;
   timestamp: number;
 }
 
@@ -74,11 +77,13 @@ export const AIChat = () => {
 
       const data = await response.json();
       const reply = data.reply || "Sorry, kuch galat ho gaya. Dobara try karo.";
+      const correction = data.correction || "";
 
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
         content: reply,
+        correction,
         timestamp: Date.now(),
       };
 
@@ -129,6 +134,18 @@ export const AIChat = () => {
               }`}
             >
               <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+
+              {/* Correction: what went wrong, how to fix it, and an example */}
+              {msg.role === "assistant" && hasCorrection(msg.correction) && (
+                <div className="mt-2 space-y-1 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2">
+                  <span className="block text-xs font-bold text-amber-400">
+                    Correction
+                  </span>
+                  <p className="text-xs whitespace-pre-wrap text-amber-100">
+                    {msg.correction}
+                  </p>
+                </div>
+              )}
             </div>
             {msg.role === "user" && (
               <div className="shrink-0 w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center">

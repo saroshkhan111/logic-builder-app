@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { parseAIChatResponse } from "@/lib/aiChatResponse";
+
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
@@ -29,7 +31,17 @@ Context:
 - Outputs: ${outputs?.join(", ") || "None"}
 - Rules: ${rules?.join(", ") || "None"}
 
-Respond in Hinglish, 2-4 sentences max, specific answers with examples.`;
+Always answer with STRICT JSON only (no markdown, no text outside JSON):
+{
+  "reply": "2-4 sentence Hinglish answer, specific and with a small Python example",
+  "correction": "What the learner did wrong + how to fix it + one short example of the correct approach"
+}
+
+Rules for "correction":
+1. Say exactly what the learner got wrong (e.g. "Tumne string choose kiya...").
+2. Explain how to fix it in simple Hinglish, step by step.
+3. Give one tiny example of the correct approach, always in Python.
+4. If the learner has not made any mistake, use an empty string.`;
 
     // Groq's endpoint is OpenAI-compatible — alternating "user"/"assistant"
     // turns (plus a system prompt). Reuse the last 6 messages for context.
@@ -56,7 +68,7 @@ Respond in Hinglish, 2-4 sentences max, specific answers with examples.`;
             { role: "user", content: message },
           ],
           temperature: 0.7,
-          max_tokens: 300,
+          max_tokens: 500,
         }),
       }
     );
@@ -71,9 +83,13 @@ Respond in Hinglish, 2-4 sentences max, specific answers with examples.`;
     }
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content?.trim() || "No response";
+    const rawContent: string = data.choices?.[0]?.message?.content || "";
+    const { reply, correction } = parseAIChatResponse(rawContent);
 
-    return NextResponse.json({ reply });
+    return NextResponse.json({
+      reply: reply || "No response",
+      correction,
+    });
   } catch (error) {
     console.error("[AI-CHAT] Error:", error);
     return NextResponse.json(
