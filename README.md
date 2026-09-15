@@ -32,6 +32,7 @@ all in the browser.
 ## 🚀 Features
 
 - ✅ 6-step guided workflow (not just a code editor)
+- ✅ AI Guide: chat tutor with corrections, per-step MCQ quizzes, field-by-field validation (Groq)
 - ✅ Auto-generated flowchart from pseudocode
 - ✅ Auto-generated test cases (5-6 per problem)
 - ✅ Code complexity analysis (Big-O detection)
@@ -63,7 +64,7 @@ all in the browser.
 - **uv** — Python package manager
 
 ### Testing
-- **Vitest** — Frontend unit tests (98 tests)
+- **Vitest** — Frontend unit tests (226 tests)
 - **Playwright** — E2E automated walkthrough
 - **Pytest** — Python engine tests (11 tests)
 
@@ -74,20 +75,30 @@ all in the browser.
 
 ---
 
-## 🔐 No API Keys Required
+## 🤖 AI Guide (Optional — Free Groq Key)
 
-**This project does NOT use any paid APIs or API keys.**
+The core 6-step workflow (flowchart, test generation, Pyodide execution) needs **no API key and works offline**.
 
-- ❌ No OpenAI API key
-- ❌ No Anthropic API key
-- ❌ No Gemini API key
-- ❌ No paid services
+The optional **AI Guide** sidebar uses Groq's free API — model `openai/gpt-oss-120b`, key stays server-side:
 
-**Everything runs locally:**
+- **Chat** — Hinglish tutor answers, with an amber "Correction" card when you make a mistake
+- **Quiz** — one problem-specific MCQ for the step you're on
+- **Field Validation** — checks each field in filling order and locks "Next" until every field is correct
+- **Syntax AI-check (Step 3)** — Mistral pseudocode analysis (`MISTRAL_API_KEY`, optional; falls back to the static checker)
+
+Setup:
+
+```bash
+# 1. Get a free key at https://console.groq.com/keys
+# 2. Add it to .env.local
+GROQ_API_KEY=gsk_your_key_here
+```
+
+Without a key the app still works — AI panels degrade gracefully ("AI not configured"). No OpenAI, Anthropic, Gemini, or other paid APIs are used.
+
+**Everything core runs locally:**
 - Python code executes in the user's browser (via Pyodide)
-- No code is sent to any server
 - FastAPI engine is optional — the app works without it
-- Works offline after initial load
 
 ---
 
