@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { callGroqWithFallback } from '@/lib/groqModels';
+
 export const runtime = 'nodejs';
 
 interface AnalyzeRequest {
   algorithm: string;
 }
-
-const MISTRAL_API_URL = 'https://api.mistral.ai/v1/chat/completions';
-const MISTRAL_MODEL = 'mistral-small-latest';
-const REQUEST_TIMEOUT_MS = 15000;
 
 function buildPrompt(algorithm: string): string {
   const bt = String.fromCharCode(96);
@@ -76,72 +74,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.MISTRAL_API_KEY;
-    if (!apiKey) {
-      console.warn('MISTRAL_API_KEY not configured — returning 503');
-      return NextResponse.json(
-        { error: 'API key not configured', fallback: true },
-        { status: 503 }
-      );
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-    try {
-      const response = await fetch(MISTRAL_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
+    const { content: rawContent } = await callGroqWithFallback({
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a pseudocode syntax checker. Return valid JSON only.',
         },
-        body: JSON.stringify({
-          model: MISTRAL_MODEL,
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a pseudocode syntax checker. Return valid JSON only.',
-            },
-            {
-              role: 'user',
-              content: buildPrompt(algorithm),
-            },
-          ],
-          temperature: 0.1,
-          max_tokens: 1500,
-          response_format: { type: 'json_object' },
-        }),
-        signal: controller.signal,
-      });
+        {
+          role: 'user',
+          content: buildPrompt(algorithm),
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 1500,
+      response_format: { type: 'json_object' },
+    });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.warn(`Mistral API error (${response.status}):`, errorText);
-        return NextResponse.json(
-          { error: `Mistral API error: ${response.status}`, fallback: true },
-          { status: response.status }
-        );
-      }
-
-      const data = await response.json();
-      return NextResponse.json(data);
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error instanceof Error && error.name === 'AbortError') {
-        return NextResponse.json(
-          { error: 'Mistral API timeout', fallback: true },
-          { status: 504 }
-        );
-      }
-      throw error;
-    }
+    const data = JSON.parse(rawContent);
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Analyze route error:', error);
+    console.error('[ANALYZE] Error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', fallback: true },
-      { status: 500 }
+      { error: 'AI service unavailable' },
+      { status: 503 }
     );
   }
 }

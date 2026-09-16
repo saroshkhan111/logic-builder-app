@@ -53,4 +53,4 @@ _Generated: 2026-09-15 · Branch: `main` · Baseline commit: `fb88223` "feat: sw
 1. `NEXTAUTH_SETUP.md` TODOs still open (generate `AUTH_SECRET`, Google OAuth credentials, auth test).
 2. No dedicated unit tests yet for `fieldValidation` / `useFieldValidation` (exercised indirectly via UI tests) — worth adding.
 3. Vitest hint: `pool: 'vmThreads'` would avoid re-creating happy-dom per file (~55 s → faster).
-4. Deployed demo needs `GROQ_API_KEY` (and optionally `MISTRAL_API_KEY`) configured on Vercel for the AI panels to work there.
+4. Deployed demo needs `GROQ_API_KEY` configured on Vercel for the AI panels to work there.

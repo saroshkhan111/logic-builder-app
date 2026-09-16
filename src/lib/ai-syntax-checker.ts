@@ -1,11 +1,11 @@
 /**
- * AI-Powered Universal Syntax Checker using Mistral API (via server-side route).
+ * AI-Powered Universal Syntax Checker using Groq API (via server-side route).
  *
  * Fallback: Static checker if the API key is missing or the API fails.
  *
  * Architecture:
  * 1. Client calls /api/analyze (same-origin, no CORS)
- * 2. Server route calls Mistral API (key stays server-side)
+ * 2. Server route calls Groq API (key stays server-side)
  * 3. Result cached client-side for 5 minutes
  */
 
@@ -100,7 +100,7 @@ function setCache(algorithm: string, result: AIAnalysisResult): void {
 // API CALL (via server-side route)
 // ============================================================
 
-async function callMistralAPI(algorithm: string): Promise<{
+async function callAIRoute(algorithm: string): Promise<{
   issues: SyntaxIssue[];
   overallFeedback: string;
   correction: string;
@@ -134,7 +134,7 @@ async function callMistralAPI(algorithm: string): Promise<{
 
     if (!content) return null;
 
-    return parseMistralResponse(content, algorithm);
+    return parseAIResponse(content, algorithm);
   } catch (error) {
     console.warn('AI route exception:', error);
     return null;
@@ -205,7 +205,7 @@ function sanitizeJsonControlChars(input: string): string {
   return result;
 }
 
-function parseMistralResponse(
+function parseAIResponse(
   content: string,
   algorithm: string
 ): {
@@ -320,8 +320,8 @@ export async function analyzeWithAI(algorithm: string): Promise<AIAnalysisResult
   const cached = getCached(algorithm);
   if (cached) return cached;
 
-  // Try AI route (server-side calls Mistral)
-  const aiResult = await callMistralAPI(algorithm);
+  // Try AI route (server-side calls Groq)
+  const aiResult = await callAIRoute(algorithm);
 
   if (!aiResult) {
     // Fallback to static checker
