@@ -25,7 +25,7 @@ import {
  * The step owns its fields (in order) and this component:
  * - validates them ONE AT A TIME: field N is only sent to the AI once field N-1
  *   is accepted, so feedback always arrives in filling order
- * - shows ✅ Sahi / ❌ Galat + reason + correction per field
+  * - shows ✅ Correct / ❌ Incorrect + reason + correction per field
  * - re-validates as soon as the learner edits a value
  * - only lets the learner continue once no field is empty or marked wrong
  *   (if the AI check itself fails, the learner is NOT blocked — the app cannot
@@ -103,43 +103,43 @@ type RowStatus =
 
 const STATUS_CONFIG = {
   checking: {
-    icon: Loader2,
-    label: "Check ho raha hai...",
+        icon: Loader2,
+    label: "Checking...",
     color: "text-indigo-400",
     box: "border-slate-700 bg-slate-900/60",
     spin: true,
   },
   correct: {
     icon: CheckCircle2,
-    label: "Sahi",
+    label: "Correct",
     color: "text-emerald-400",
     box: "border-emerald-500/30 bg-emerald-500/10",
     spin: false,
   },
   incorrect: {
     icon: XCircle,
-    label: "Galat",
+    label: "Incorrect",
     color: "text-rose-400",
     box: "border-rose-500/30 bg-rose-500/10",
     spin: false,
   },
   unavailable: {
     icon: AlertTriangle,
-    label: "AI check nahi chala",
+    label: "AI check did not run",
     color: "text-amber-400",
     box: "border-amber-500/30 bg-amber-500/10",
     spin: false,
   },
   empty: {
     icon: AlertTriangle,
-    label: "Khaali field",
+    label: "Empty field",
     color: "text-amber-400",
     box: "border-amber-500/30 bg-amber-500/10",
     spin: false,
   },
   waiting: {
     icon: Lock,
-    label: "Ruko",
+    label: "Waiting",
     color: "text-slate-500",
     box: "border-slate-800 bg-slate-900/40",
     spin: false,
@@ -245,8 +245,8 @@ export function StepFieldValidation({
 
     if (isActive) {
       if (!field.value.trim()) {
-        row.status = "empty";
-        row.detail = "Yeh field khaali hai - pehle ise bharo.";
+                row.status = "empty";
+        row.detail = "This field is empty. Fill it first.";
       } else if (status === "invalid") {
         row.status = "incorrect";
         row.detail = result?.reason ?? "";
@@ -260,7 +260,7 @@ export function StepFieldValidation({
         row.hint = result?.nextHint ?? stored?.result?.nextHint ?? "";
       } else {
         row.status = "checking";
-        row.detail = "AI tumhari value check kar raha hai...";
+        row.detail = "AI is checking your value...";
       }
 
       return row;
@@ -275,12 +275,12 @@ export function StepFieldValidation({
       row.correction = stored.result?.correction ?? "";
     } else if (stored?.outcome === "unavailable") {
       row.status = "unavailable";
-      row.detail = "AI check nahi chala - aap aage badh sakte ho.";
+            row.detail = "AI check did not run. You can continue.";
     } else if (!field.value.trim()) {
       row.status = "empty";
-      row.detail = "Khaali - pehle upar wale fields sahi karo.";
+      row.detail = "Empty. Fix the fields above first.";
     } else {
-      row.detail = "Pehle upar wale fields sahi karo, phir yeh check hoga.";
+      row.detail = "Fix the fields above first. Then this one is checked.";
     }
 
     return row;
@@ -289,7 +289,7 @@ const activeHint = rows[activeIndex]?.hint ?? "";
   const hasNextField = activeIndex !== -1 && activeIndex < fields.length - 1;
   const headerBadge = isBlocked
     ? `Field ${Math.min(activeIndex + 1, fields.length)}/${fields.length}`
-    : "Sab sahi";
+        : "All correct";
 
   return (
     <div className="space-y-3">
@@ -337,7 +337,7 @@ const activeHint = rows[activeIndex]?.hint ?? "";
                         {index + 1}. {row.field.label}
                       </span>
                       <span className={`text-[10px] font-semibold ${config.color}`}>
-                        {row.status === "correct" ? "✅ Sahi" : config.label}
+                                    {row.status === "correct" ? "✅ Correct" : config.label}
                       </span>
                     </div>
 
@@ -368,13 +368,13 @@ const activeHint = rows[activeIndex]?.hint ?? "";
         {activeHint && hasNextField && (
           <div className="flex items-start gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 p-2">
             <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5 text-indigo-300" />
-            <p className="text-xs text-indigo-100">Agla focus: {activeHint}</p>
+            <p className="text-xs text-indigo-100">Next focus: {activeHint}</p>
           </div>
         )}
 
         {isBlocked && (
           <p className="text-[11px] text-amber-300">
-            Har field sahi (✅) hone par hi aap agle step par ja sakte ho.
+                                    Every field must be correct (✅) before you move to the next step.
           </p>
         )}
       </div>

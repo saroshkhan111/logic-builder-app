@@ -3,15 +3,15 @@ import { describe, expect, it } from "vitest";
 import { buildStepMCQPrompt, parseStepMCQ } from "./stepMcq";
 
 const VALID_MCQ = {
-  question: "Even/odd check karne ke liye kaunsa operator use karte hain?",
+  question: "Which operator checks even/odd?",
   options: ["+ (plus)", "% (modulo)", "* (multiply)", "/ (divide)"],
   correctIndex: 1,
   reasonCorrect:
-    "Modulo (%) remainder deta hai. Agar remainder 0 ho to number even hai.",
+    "Modulo (%) returns the remainder. If the remainder is 0, the number is even.",
   reasonWrong:
-    "Plus sirf jodta hai, remainder nahi deta. Isliye even/odd check nahi ho payega.",
+    "Plus only adds, it does not return the remainder. So the even/odd check cannot work.",
   correction:
-    "number % 2 == 0 use karo. Example: if number % 2 == 0: print('Even').",
+    "Use number % 2 == 0. For example: if number % 2 == 0: print('Even').",
   concept: "Modulo operator",
 };
 
@@ -39,13 +39,13 @@ describe("parseStepMCQ", () => {
   it("trims strings and drops empty options", () => {
     const parsed = parseStepMCQ({
       ...VALID_MCQ,
-      question: "  Sawal?  ",
+      question: "  Which operator checks even/odd?  ",
       options: ["  A option  ", "", "   ", "B option"],
       correctIndex: 1,
       concept: "  Loops  ",
     });
 
-    expect(parsed?.question).toBe("Sawal?");
+    expect(parsed?.question).toBe("Which operator checks even/odd?");
     expect(parsed?.options).toEqual(["A option", "B option"]);
     expect(parsed?.correctIndex).toBe(1);
     expect(parsed?.concept).toBe("Loops");
@@ -82,13 +82,13 @@ describe("parseStepMCQ", () => {
 
   it("fills missing explanations with empty strings", () => {
     const parsed = parseStepMCQ({
-      question: "Loops mein kaunsa keyword use hota hai?",
+      question: "Which keyword is used in loops?",
       options: ["for", "def"],
       correctIndex: 0,
     });
 
     expect(parsed).toEqual({
-      question: "Loops mein kaunsa keyword use hota hai?",
+      question: "Which keyword is used in loops?",
       options: ["for", "def"],
       correctIndex: 0,
       reasonCorrect: "",
@@ -125,7 +125,7 @@ describe("buildStepMCQPrompt", () => {
       problemStatement: "Check if a number is even or odd",
       inputs: ["number (integer)"],
       outputs: ["result"],
-      rules: ["Input 0 se bada hona chahiye"],
+      rules: ["The input must be greater than 0"],
     });
 
     expect(prompt).toContain("Current Step: 2/6");
@@ -135,7 +135,7 @@ describe("buildStepMCQPrompt", () => {
     );
     expect(prompt).toContain("Outputs (Step 1 data - context only): result");
     expect(prompt).toContain(
-      "Rules (Step 1 data - context only): Input 0 se bada hona chahiye"
+      "Rules (Step 1 data - context only): The input must be greater than 0"
     );
     expect(prompt).toContain("Return ONLY valid JSON");
     expect(prompt).toContain('"correctIndex"');
@@ -155,20 +155,20 @@ describe("buildStepMCQPrompt", () => {
     for (const [step, marker] of fieldsByStep) {
       const prompt = buildStepMCQPrompt({
         step,
-        problemStatement: "Do numbers ka sum nikalo",
+        problemStatement: "Find the sum of two numbers",
         inputs: ["number1 (integer)", "number2 (integer)"],
         outputs: ["sum"],
-        rules: ["Dono numbers positive hone chahiye"],
+        rules: ["Both numbers must be positive"],
       });
 
       expect(prompt).toContain(`Current Step: ${step}/6`);
       expect(prompt).toContain(marker);
       expect(prompt).toContain(`Question MUST be about Step ${step}'s fields`);
       // The problem itself must still be part of what the question is about.
-      expect(prompt).toContain("Problem Statement: Do numbers ka sum nikalo");
+      expect(prompt).toContain("Problem Statement: Find the sum of two numbers");
       expect(prompt).toContain("number1 (integer)");
       expect(prompt).toContain("Outputs (Step 1 data - context only): sum");
-      expect(prompt).toContain("Dono numbers positive hone chahiye");
+      expect(prompt).toContain("Both numbers must be positive");
     }
   });
 
@@ -232,7 +232,7 @@ describe("buildStepMCQPrompt", () => {
   it("keeps the answer out of the option text and the JSON shape stable", () => {
     const prompt = buildStepMCQPrompt({
       step: 3,
-      problemStatement: "Even/odd check karo",
+      problemStatement: "Perform an even/odd check",
     });
 
     // Options must not be self-labelled as correct/wrong.

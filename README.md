@@ -81,7 +81,7 @@ The core 6-step workflow (flowchart, test generation, Pyodide execution) needs *
 
 The optional **AI Guide** sidebar uses Groq's free API — model `openai/gpt-oss-120b`, key stays server-side:
 
-- **Chat** — Hinglish tutor answers, with an amber "Correction" card when you make a mistake
+- **Chat** — English tutor answers, with an amber "Correction" card when you make a mistake
 - **Quiz** — one problem-specific MCQ for the step you're on
 - **Field Validation** — checks each field in filling order and locks "Next" until every field is correct
 - **Syntax AI-check (Step 3)** — Mistral pseudocode analysis (`MISTRAL_API_KEY`, optional; falls back to the static checker)

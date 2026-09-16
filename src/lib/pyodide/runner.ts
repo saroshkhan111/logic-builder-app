@@ -37,9 +37,20 @@ export const getPyodide = async (): Promise<PyodideInstance> => {
   if (pyodideInstance) return pyodideInstance;
 
   if (typeof window !== "undefined" && window.loadPyodide) {
-    pyodideInstance = (await window.loadPyodide({
+    const loaded = await window.loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/",
-    })) as PyodideInstance;
+    });
+
+    if (!loaded) {
+      throw new Error("Pyodide failed to load: loadPyodide returned undefined.");
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!(loaded as any).runPythonAsync) {
+      throw new Error("Pyodide failed to load: loaded instance does not have runPythonAsync.");
+    }
+
+    pyodideInstance = loaded as PyodideInstance;
     return pyodideInstance;
   }
 
@@ -112,6 +123,7 @@ builtins.input = mock_input
       error: null,
     };
   } catch (err: unknown) {
+    console.error("Error in runPythonCode:", err);
     const errorMessage =
       err instanceof Error ? err.message : "An error occurred during Python execution.";
     return {
@@ -205,7 +217,17 @@ export const parseInputTokens = (testInput: string): string[] => {
   }
   if (lines.length > 1) return lines;
 
+  // If the single line is already a Python literal (list, tuple, dict, or
+  // quoted string), treat it as ONE argument instead of splitting on commas.
+  if (/^(\[.*?\]|\(.*?\)|{.*?}|(['"]).*?\2)$/.test(lines[0])) {
+    return [lines[0]];
+  }
+
   // A single line may already be comma separated, e.g. "5, 3".
+  // Do not split if it looks like a list, tuple, or dict literal.
+  if (/^(\[.*\]|\(.*\)|{.*})$/.test(lines[0])) {
+    return [lines[0]];
+  }
   const commaParts = lines[0]
     .split(",")
     .map((p) => p.trim())
@@ -214,7 +236,7 @@ export const parseInputTokens = (testInput: string): string[] => {
 };
 
 /** Renders one input token as a valid Python argument literal. */
-const formatPythonValue = (raw: string): string => {
+export const formatPythonValue = (raw: string): string => {
   const value = raw.trim();
   if (value === "") return '""';
   // numbers

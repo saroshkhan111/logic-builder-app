@@ -18,7 +18,7 @@ interface ChatMessage {
 const INITIAL_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
-  content: "Hi! Main tumhara coding assistant hun. Koi bhi sawal pucho - loops, testing, errors, ya kuch aur. Main help karunga!",
+  content: "Hi! I am your coding assistant. Ask me anything about loops, testing, errors, or anything else. I am here to help!",
   timestamp: 0,
 };
 
@@ -76,7 +76,7 @@ export const AIChat = () => {
       }
 
       const data = await response.json();
-      const reply = data.reply || "Sorry, kuch galat ho gaya. Dobara try karo.";
+      const reply = data.reply || "Sorry, something went wrong. Please try again.";
       const correction = data.correction || "";
 
       const assistantMessage: ChatMessage = {
@@ -95,7 +95,7 @@ export const AIChat = () => {
       const errorMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Sorry, abhi AI service available nahi hai. Thodi der baad try karo.",
+        content: "Sorry, the AI service is unavailable right now. Please try again in a moment.",
         timestamp: Date.now(),
       };
       
@@ -175,7 +175,7 @@ export const AIChat = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Kuch bhi pucho..."
+            placeholder="Ask anything..."
             disabled={isLoading}
             className="flex-1 bg-slate-800 text-slate-200 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
           />

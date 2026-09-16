@@ -19,19 +19,19 @@ const REQUEST_BODY = {
   problemStatement: "Check if a number is even or odd",
   inputs: ["number (integer)"],
   outputs: ["result"],
-  rules: ["Input 0 se bada hona chahiye"],
+  rules: ["Input must be greater than 0"],
 };
 
 const MODEL_PAYLOAD = {
-  question: "Even/odd check karne ke liye kaunsa operator use karte hain?",
+    question: "Which operator checks even/odd?",
   options: ["+ (plus)", "% (modulo)", "* (multiply)", "/ (divide)"],
   correctIndex: 1,
   reasonCorrect:
-    "Modulo (%) remainder deta hai. Agar remainder 0 ho to number even hai.",
+    "Modulo (%) gives the remainder. If the remainder is 0, the number is even.",
   reasonWrong:
-    "Plus sirf jodta hai, remainder nahi deta. Isliye even/odd check nahi ho payega.",
+    "Plus only adds numbers. It does not give a remainder, so it cannot check even/odd.",
   correction:
-    "number % 2 == 0 use karo. Example: if number % 2 == 0: print('Even').",
+    "Use number % 2 == 0. Example: if number % 2 == 0: print('Even').",
   concept: "Modulo operator",
 };
 
@@ -93,7 +93,7 @@ describe("POST /api/step-mcq", () => {
     );
     expect(sentBody.messages[0].content).toContain("number (integer)");
     expect(sentBody.messages[0].content).toContain(
-      "Input 0 se bada hona chahiye"
+      "Input must be greater than 0"
     );
     // The quiz must target Step 2's own fields, not Step 1's inputs.
     expect(sentBody.messages[0].content).toContain("STEP 2 FIELDS:");
@@ -138,7 +138,7 @@ describe("POST /api/step-mcq", () => {
   });
 
   it("returns 500 when the model answer is not a usable quiz", async () => {
-    mockModelResponse("Sorry, main abhi quiz nahi bana sakta.");
+        mockModelResponse("Sorry, I cannot create a quiz right now.");
 
     const response = await POST(makeRequest(REQUEST_BODY));
     const data = await response.json();
@@ -147,8 +147,34 @@ describe("POST /api/step-mcq", () => {
     expect(data.error).toContain("unusable quiz");
   });
 
-  it("returns 500 when Groq fails", async () => {
-    mockFetch.mockResolvedValueOnce({
+  it("falls back to the next model when the primary is rate limited", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        text: async () => "rate limited",
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: JSON.stringify(MODEL_PAYLOAD) } }] }),
+      });
+
+    const response = await POST(makeRequest(REQUEST_BODY));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toEqual(MODEL_PAYLOAD);
+
+    // First call used the primary model, the retry used the fallback.
+    const firstBody = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    const secondBody = JSON.parse(mockFetch.mock.calls[1][1].body as string);
+    expect(firstBody.model).toBe("openai/gpt-oss-120b");
+    expect(secondBody.model).toBe("llama-3.3-70b-versatile");
+  });
+
+  it("returns 500 when all Groq models fail", async () => {
+    // One failure per model in the fallback chain.
+    mockFetch.mockResolvedValue({
       ok: false,
       status: 429,
       text: async () => "rate limited",
@@ -159,6 +185,7 @@ describe("POST /api/step-mcq", () => {
 
     expect(response.status).toBe(500);
     expect(data.error).toContain("429");
+    expect(mockFetch).toHaveBeenCalledTimes(3);
   });
 
   it("returns 503 when GROQ_API_KEY is missing", async () => {

@@ -148,9 +148,9 @@ export const Step3Algorithm = () => {
             { label: "Logical Concepts", values: logicalConcepts, color: "emerald" },
           ]}
         />
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
           {/* Column 1 - Algorithm Writer (60%) */}
-          <div className="lg:col-span-3 bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div className="min-w-0 xl:col-span-3 bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
             <div className="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
               <Terminal className="w-4 h-4" /> Algorithm Writer
               {syntaxIssues.length > 0 && (
@@ -194,8 +194,8 @@ export const Step3Algorithm = () => {
           </div>
 
           {/* Column 2 - Live Flowchart (40%) */}
-          <div className="lg:col-span-2 bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="min-w-0 xl:col-span-2 bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
                 <GitBranch className="w-4 h-4" /> Live Flowchart
               </div>

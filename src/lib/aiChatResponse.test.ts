@@ -9,55 +9,55 @@ import {
 describe("parseAIChatResponse", () => {
   it("parses reply and correction from strict JSON", () => {
     const raw = JSON.stringify({
-      reply: "Even/odd check karne ke liye modulo (%) use karo.",
+      reply: "To check even/odd, use the modulo (%) operator.",
       correction:
-        "Tumne string choose kiya. Par even/odd check karne ke liye integer chahiye. Aise socho: number 2 se divide hoga ya nahi. Isliye input integer hona chahiye.",
+        "You chose a string. But even/odd needs an integer. Think of it this way: will the number divide by 2? So the input must be an integer.",
     });
 
     const result = parseAIChatResponse(raw);
 
-    expect(result.reply).toBe("Even/odd check karne ke liye modulo (%) use karo.");
+    expect(result.reply).toBe("To check even/odd, use the modulo (%) operator.");
     expect(result.correction).toBe(
-      "Tumne string choose kiya. Par even/odd check karne ke liye integer chahiye. Aise socho: number 2 se divide hoga ya nahi. Isliye input integer hona chahiye."
+      "You chose a string. But even/odd needs an integer. Think of it this way: will the number divide by 2? So the input must be an integer."
     );
     expect(hasCorrection(result.correction)).toBe(true);
   });
 
   it("parses JSON wrapped in a markdown code fence", () => {
     const raw =
-      '```json\n{"reply":"Loops se repeat karo.","correction":"range(1, 5) use karo, [0..4] nahi."}\n```';
+      '```json\n{"reply":"Repeat with a loop.","correction":"Use range(1, 5), not [0..4]."}\n```';
 
     const result = parseAIChatResponse(raw);
 
-    expect(result.reply).toBe("Loops se repeat karo.");
-    expect(result.correction).toBe("range(1, 5) use karo, [0..4] nahi.");
+    expect(result.reply).toBe("Repeat with a loop.");
+    expect(result.correction).toBe("Use range(1, 5), not [0..4].");
   });
 
   it("parses JSON embedded in extra model text", () => {
     const raw =
-      'Ye raha jawab:\n{"reply":"Sorted list par binary search chalti hai.","correction":"Pehle sort karo, phir search."}\nShukriya!';
+      'Here is the answer:\n{"reply":"Binary search runs on a sorted list.","correction":"First sort the list, then search."}\nThank you!';
 
     const result = parseAIChatResponse(raw);
 
-    expect(result.reply).toBe("Sorted list par binary search chalti hai.");
-    expect(result.correction).toBe("Pehle sort karo, phir search.");
+    expect(result.reply).toBe("Binary search runs on a sorted list.");
+    expect(result.correction).toBe("First sort the list, then search.");
   });
 
   it("returns an empty correction when the model reports no mistake", () => {
     const raw = JSON.stringify({
-      reply: "Bilkul sahi! Input integer hi lena chahiye.",
+      reply: "Correct! The input must be an integer.",
       correction: "",
     });
 
     const result = parseAIChatResponse(raw);
 
-    expect(result.reply).toBe("Bilkul sahi! Input integer hi lena chahiye.");
+    expect(result.reply).toBe("Correct! The input must be an integer.");
     expect(result.correction).toBe("");
     expect(hasCorrection(result.correction)).toBe(false);
   });
 
   it("treats placeholder corrections as no correction", () => {
-    const raw = JSON.stringify({ reply: "Sahi hai!", correction: "none" });
+    const raw = JSON.stringify({ reply: "Correct!", correction: "none" });
 
     const result = parseAIChatResponse(raw);
 
@@ -65,7 +65,7 @@ describe("parseAIChatResponse", () => {
   });
 
   it("falls back to the raw text as reply when the model returns plain text", () => {
-    const raw = "Simple answer: input ko int() mein convert karo.";
+    const raw = "Simple answer: convert the input to int().";
 
     const result = parseAIChatResponse(raw);
 
@@ -80,7 +80,7 @@ describe("parseAIChatResponse", () => {
   });
 
   it("keeps plain text when JSON has no usable reply field", () => {
-    const raw = '{"correction":"Variable define karo."}';
+    const raw = '{"correction":"Define the variable."}';
 
     const result = parseAIChatResponse(raw);
 
@@ -91,7 +91,7 @@ describe("parseAIChatResponse", () => {
 
 describe("normalizeCorrection", () => {
   it("trims a real correction", () => {
-    expect(normalizeCorrection("  Integer use karo.  ")).toBe("Integer use karo.");
+    expect(normalizeCorrection("  Use an integer.  ")).toBe("Use an integer.");
   });
 
   it("treats placeholders and non-strings as no correction", () => {
@@ -106,7 +106,7 @@ describe("normalizeCorrection", () => {
 
 describe("hasCorrection", () => {
   it("detects a usable correction string", () => {
-    expect(hasCorrection("Input integer hona chahiye.")).toBe(true);
+    expect(hasCorrection("The input must be an integer.")).toBe(true);
   });
 
   it("rejects empty, whitespace and missing values", () => {

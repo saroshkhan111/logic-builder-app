@@ -1,7 +1,7 @@
 /**
  * AI-Powered Universal Syntax Checker using Mistral API (via server-side route).
  *
- * Fallback: Static checker agar API key nahi hai ya API fail ho.
+ * Fallback: Static checker if the API key is missing or the API fails.
  *
  * Architecture:
  * 1. Client calls /api/analyze (same-origin, no CORS)
@@ -10,7 +10,11 @@
  */
 
 import { normalizeCorrection } from './aiChatResponse';
-import type { SyntaxIssue } from './algorithmSyntaxChecker';
+import type {
+  IssueSeverity,
+  IssueType,
+  SyntaxIssue,
+} from './algorithmSyntaxChecker';
 import { checkAlgorithmSyntax } from './algorithmSyntaxChecker';
 
 // ============================================================
@@ -37,6 +41,31 @@ export interface AIAnalysisResult {
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 15000;
+
+/**
+ * English title per AI issue type — so the AI checker and the static checker
+ * speak the same beginner language.
+ */
+const AI_TYPE_TITLES: Record<IssueType, string> = {
+  keyword: 'Wrong keyword',
+  structure: 'Block is not complete',
+  indentation: 'Fix the indentation',
+  spelling: 'Check the spelling',
+  case: 'Write keywords in UPPERCASE',
+  value: 'A value is missing',
+  semantic: 'Check the variable',
+};
+
+/** Fallback correct-usage example per AI issue type. */
+const AI_TYPE_EXAMPLES: Record<IssueType, string> = {
+  keyword: 'IF num > 0 THEN\n  DISPLAY positive\nENDIF',
+  structure: 'IF num > 0 THEN\n  DISPLAY positive\nENDIF',
+  indentation: 'IF num > 0 THEN\n  DISPLAY positive\nENDIF',
+  spelling: 'DISPLAY result',
+  case: 'INPUT num',
+  value: 'DISPLAY result',
+  semantic: 'SET total = 0\nDISPLAY total',
+};
 
 // ============================================================
 // CACHE
@@ -105,7 +134,7 @@ async function callMistralAPI(algorithm: string): Promise<{
 
     if (!content) return null;
 
-    return parseMistralResponse(content);
+    return parseMistralResponse(content, algorithm);
   } catch (error) {
     console.warn('AI route exception:', error);
     return null;
@@ -176,7 +205,10 @@ function sanitizeJsonControlChars(input: string): string {
   return result;
 }
 
-function parseMistralResponse(content: string): {
+function parseMistralResponse(
+  content: string,
+  algorithm: string
+): {
   issues: SyntaxIssue[];
   overallFeedback: string;
   correction: string;
@@ -197,6 +229,7 @@ function parseMistralResponse(content: string): {
       'keyword', 'structure', 'indentation', 'spelling', 'case', 'value', 'semantic',
     ]);
 
+    const algorithmLines = algorithm.split('\n');
     const issues: SyntaxIssue[] = parsed.issues
       .filter((i: unknown) => {
         if (typeof i !== 'object' || i === null) return false;
@@ -207,16 +240,32 @@ function parseMistralResponse(content: string): {
           validSeverities.has(issue.severity as string)
         );
       })
-      .map((i: Record<string, unknown>) => ({
-        lineNumber: Number(i.lineNumber),
-        severity: (i.severity as 'error' | 'warning' | 'info'),
-        message: String(i.message),
-        suggestion: String(i.suggestion || ''),
-        fix: typeof i.fix === 'string' ? i.fix : undefined,
-        type: (validTypes.has(i.type as string)
-          ? (i.type as SyntaxIssue['type'] || 'structure')
-          : 'structure') as SyntaxIssue['type'],
-      }));
+      .map((i: Record<string, unknown>): SyntaxIssue => {
+        const line = Number(i.lineNumber) || 1;
+        const type: IssueType = validTypes.has(i.type as string)
+          ? (i.type as IssueType)
+          : 'structure';
+        const fix = typeof i.fix === 'string' && i.fix ? i.fix : undefined;
+
+        const issue: SyntaxIssue = {
+          line,
+          severity: i.severity as IssueSeverity,
+          type,
+          // English title from the type map — same language as the static
+          // checker, regardless of what language the model replied in.
+          title: AI_TYPE_TITLES[type],
+          // The /api/analyze prompt asks for simple English explanations; whatever
+          // the model returns lands here.
+          explanation: String(i.message),
+          // The AI's corrected line doubles as the copyable example; otherwise
+          // fall back to a generic correct-usage example for the issue type.
+          example: fix ?? AI_TYPE_EXAMPLES[type],
+          // The learner's own line at that position, for context.
+          originalLine: (algorithmLines[line - 1] ?? '').trim(),
+        };
+        if (fix) issue.fixedLine = fix;
+        return issue;
+      });
 
     const complexity = ['simple', 'medium', 'complex'].includes(parsed.complexity as string)
       ? (parsed.complexity as 'simple' | 'medium' | 'complex')

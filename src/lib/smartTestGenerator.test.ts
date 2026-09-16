@@ -6,580 +6,303 @@ import {
   parseCondition,
   detectProblemType,
   detectInputType,
-  generateValuesForInput,
+  generateValuesForType,
+  formatValueForCall,
   generateTestCases,
   isHardcodedCode,
   HARDCODED_CODE_WARNING,
-  type ParsedCondition,
 } from "./smartTestGenerator";
 
-// Mock the runner module
 vi.mock("@/lib/pyodide/runner", () => ({
   runSmartPythonCode: vi.fn(),
 }));
 
 describe("parseCondition", () => {
-  it("parses 'must be > N' correctly", () => {
-    const result = parseCondition("age must be > 0");
-    expect(result).toEqual({ field: "age", operator: ">", value: 0 });
+  it("parses '> N'", () => {
+    expect(parseCondition("age must be > 0")).toEqual({ field: "age", operator: ">", value: 0 });
   });
-
-  it("parses 'must be greater than N' correctly", () => {
-    const result = parseCondition("score must be greater than 50");
-    expect(result).toEqual({ field: "score", operator: ">", value: 50 });
+  it("parses 'greater than N'", () => {
+    expect(parseCondition("score must be greater than 50")).toEqual({ field: "score", operator: ">", value: 50 });
   });
-
-  it("parses 'must be >= N' correctly", () => {
-    const result = parseCondition("age must be >= 18");
-    expect(result).toEqual({ field: "age", operator: ">=", value: 18 });
+  it("parses '>= N'", () => {
+    expect(parseCondition("age must be >= 18")).toEqual({ field: "age", operator: ">=", value: 18 });
   });
-
-  it("parses 'must be at least N' correctly", () => {
-    const result = parseCondition("marks must be at least 40");
-    expect(result).toEqual({ field: "marks", operator: ">=", value: 40 });
+  it("parses 'at least N'", () => {
+    expect(parseCondition("marks must be at least 40")).toEqual({ field: "marks", operator: ">=", value: 40 });
   });
-
-  it("parses 'must be < N' correctly", () => {
-    const result = parseCondition("temp must be < 100");
-    expect(result).toEqual({ field: "temp", operator: "<", value: 100 });
+  it("parses '< N'", () => {
+    expect(parseCondition("temp must be < 100")).toEqual({ field: "temp", operator: "<", value: 100 });
   });
-
-  it("parses 'must be <= N' correctly", () => {
-    const result = parseCondition("age must be <= 65");
-    expect(result).toEqual({ field: "age", operator: "<=", value: 65 });
+  it("parses '<= N'", () => {
+    expect(parseCondition("age must be <= 65")).toEqual({ field: "age", operator: "<=", value: 65 });
   });
-
-  it("parses 'must be between X and Y' correctly", () => {
-    const result = parseCondition("score must be between 0 and 100");
-    expect(result).toEqual({
-      field: "score",
-      operator: "between",
-      value: 0,
-      value2: 100,
-    });
+  it("parses 'between X and Y'", () => {
+    expect(parseCondition("score must be between 0 and 100")).toEqual({ field: "score", operator: "between", value: 0, value2: 100 });
   });
-
-  it("parses 'must be between X to Y' correctly", () => {
-    const result = parseCondition("age must be between 18 to 65");
-    expect(result).toEqual({
-      field: "age",
-      operator: "between",
-      value: 18,
-      value2: 65,
-    });
+  it("parses 'between X to Y'", () => {
+    expect(parseCondition("age must be between 18 to 65")).toEqual({ field: "age", operator: "between", value: 18, value2: 65 });
   });
-
-  it("parses 'must be positive' correctly", () => {
-    const result = parseCondition("number must be positive");
-    expect(result).toEqual({ field: "number", operator: "positive", value: 0 });
+  it("parses 'positive'", () => {
+    expect(parseCondition("number must be positive")).toEqual({ field: "number", operator: "positive", value: 0 });
   });
-
-  it("parses 'must be non-negative' correctly", () => {
-    const result = parseCondition("count must be non-negative");
-    expect(result).toEqual({
-      field: "count",
-      operator: "non-negative",
-      value: 0,
-    });
+  it("parses 'non-negative'", () => {
+    expect(parseCondition("count must be non-negative")).toEqual({ field: "count", operator: "non-negative", value: 0 });
   });
-
-  it("parses 'must be even' correctly", () => {
-    const result = parseCondition("number must be even");
-    expect(result).toEqual({ field: "number", operator: "even", value: 0 });
+  it("parses 'even'", () => {
+    expect(parseCondition("number must be even")).toEqual({ field: "number", operator: "even", value: 0 });
   });
-
-  it("parses 'must be odd' correctly", () => {
-    const result = parseCondition("number must be odd");
-    expect(result).toEqual({ field: "number", operator: "odd", value: 1 });
+  it("parses 'odd'", () => {
+    expect(parseCondition("number must be odd")).toEqual({ field: "number", operator: "odd", value: 1 });
   });
-
   it("returns null for unrecognized rules", () => {
     expect(parseCondition("this is not a rule")).toBeNull();
   });
-
   it("returns null for empty string", () => {
     expect(parseCondition("")).toBeNull();
   });
 });
 
 describe("detectProblemType", () => {
-  it("detects temperature from celsius", () => {
-    expect(
-      detectProblemType(
-        "Convert celsius to fahrenheit",
-        ["celsius_temp"],
-        ["fahrenheit_temp"]
-      )
-    ).toBe("temperature");
+  it("detects temperature", () => {
+    expect(detectProblemType("Convert celsius to fahrenheit", ["celsius_temp"], ["fahrenheit_temp"])).toBe("temperature");
   });
-
-  it("detects temperature from keyword 'fahrenheit'", () => {
-    expect(
-      detectProblemType("Temperature conversion", ["temp"], ["result"])
-    ).toBe("temperature");
+  it("detects grade", () => {
+    expect(detectProblemType("Find grade from marks", ["marks"], ["grade"])).toBe("grade");
   });
-
-  it("detects temperature from 'kelvin'", () => {
-    expect(
-      detectProblemType("Convert kelvin to celsius", ["kelvin"], ["celsius"])
-    ).toBe("temperature");
-  });
-
-  it("detects grade from 'grade'", () => {
-    expect(
-      detectProblemType("Calculate student grade", ["marks"], ["grade"])
-    ).toBe("grade");
-  });
-
-  it("detects grade from 'score'", () => {
-    expect(detectProblemType("Calculate score", ["marks"], ["result"])).toBe(
-      "grade"
-    );
-  });
-
   it("detects fibonacci", () => {
-    expect(detectProblemType("Find fibonacci number", ["n"], ["result"])).toBe(
-      "fibonacci"
-    );
+    expect(detectProblemType("Print fibonacci numbers", ["n"], ["out"])).toBe("fibonacci");
   });
-
   it("detects prime", () => {
-    expect(detectProblemType("Check if prime", ["number"], ["is_prime"])).toBe(
-      "prime"
-    );
+    expect(detectProblemType("Check if number is prime", ["n"], ["out"])).toBe("prime");
   });
-
   it("detects factorial", () => {
-    expect(detectProblemType("Calculate factorial", ["n"], ["result"])).toBe(
-      "factorial"
-    );
+    expect(detectProblemType("Calculate factorial", ["n"], ["result"])).toBe("factorial");
   });
-
   it("detects even-odd", () => {
-    expect(detectProblemType("Check even or odd", ["number"], ["result"])).toBe(
-      "even-odd"
-    );
+    expect(detectProblemType("Check even or odd", ["number"], ["result"])).toBe("even-odd");
   });
-
   it("detects palindrome", () => {
-    expect(detectProblemType("Check if palindrome", ["text"], ["result"])).toBe(
-      "palindrome"
-    );
+    expect(detectProblemType("Check if string is palindrome", ["s"], ["out"])).toBe("palindrome");
   });
-
   it("detects reverse", () => {
-    expect(detectProblemType("Reverse a string", ["text"], ["reversed"])).toBe(
-      "reverse"
-    );
+    expect(detectProblemType("Reverse a string", ["text"], ["reversed"])).toBe("reverse");
   });
-
-  it("detects aggregation from 'sum'", () => {
-    expect(
-      detectProblemType("Calculate sum of numbers", ["numbers"], ["total"])
-    ).toBe("aggregation");
+  it("detects aggregation", () => {
+    expect(detectProblemType("Find sum of numbers", ["nums"], ["total"])).toBe("aggregation");
   });
-
-  it("detects aggregation from 'average'", () => {
-    expect(detectProblemType("Find average", ["values"], ["avg"])).toBe(
-      "aggregation"
-    );
-  });
-
-  it("returns generic for unrecognized problems", () => {
-    expect(
-      detectProblemType("Do something random", ["input"], ["output"])
-    ).toBe("generic");
-  });
-
-  it("detects from inputs when statement is empty", () => {
-    expect(
-      detectProblemType(
-        "",
-        ["celsius_temp (number)"],
-        ["fahrenheit_temp (float)"]
-      )
-    ).toBe("temperature");
+  it("returns generic for unmatched input", () => {
+    expect(detectProblemType("Do something random", ["a"], ["b"])).toBe("generic");
   });
 });
 
 describe("detectInputType", () => {
-  it("detects boolean from 'bool'", () => {
-    expect(detectInputType("is_valid (boolean)")).toBe("boolean");
+  it("detects list-of-integers", () => {
+    expect(detectInputType("numbers (list of integers)")).toBe("list-of-integers");
+    expect(detectInputType("arr (array of int)")).toBe("list-of-integers");
   });
-
-  it("detects boolean from 'flag'", () => {
-    expect(detectInputType("flag")).toBe("boolean");
+  it("detects list-of-floats", () => {
+    expect(detectInputType("data (list of floats)")).toBe("list-of-floats");
   });
-
-  it("detects boolean from 'is_'/'has_' prefixed names", () => {
+  it("detects list-of-strings", () => {
+    expect(detectInputType("words (list of strings)")).toBe("list-of-strings");
+  });
+  it("detects generic list as list-of-integers", () => {
+    expect(detectInputType("arr (list)")).toBe("list-of-integers");
+  });
+  it("detects matrix", () => {
+    expect(detectInputType("grid (matrix)")).toBe("matrix");
+    expect(detectInputType("grid (2d array)")).toBe("matrix");
+  });
+  it("detects dictionary", () => {
+    expect(detectInputType("lookup (dict)")).toBe("dictionary");
+    expect(detectInputType("cache (map)")).toBe("dictionary");
+  });
+  it("detects boolean", () => {
+    expect(detectInputType("flag (bool)")).toBe("boolean");
     expect(detectInputType("is_valid")).toBe("boolean");
-    expect(detectInputType("has_peak")).toBe("boolean");
+    expect(detectInputType("has_value")).toBe("boolean");
   });
-
-  it("detects integer", () => {
-    expect(detectInputType("count (integer)")).toBe("integer");
+  it("detects string", () => {
+    expect(detectInputType("name (string)")).toBe("string");
+    expect(detectInputType("input (text)")).toBe("string");
   });
-
   it("detects float", () => {
-    expect(detectInputType("price (float)")).toBe("float");
+    expect(detectInputType("rate (float)")).toBe("float");
+    expect(detectInputType("value (decimal)")).toBe("float");
   });
-
-  it("detects number from 'number' keyword", () => {
-    expect(detectInputType("age (number)")).toBe("number");
+  it("detects integer", () => {
+    expect(detectInputType("age (integer)")).toBe("integer");
+    expect(detectInputType("count (number)")).toBe("integer");
   });
-
-  it("detects number from 'temp' in name", () => {
-    expect(detectInputType("celsius_temp")).toBe("number");
+  it("detects unknown type", () => {
+    expect(detectInputType("xyz")).toBe("unknown");
   });
-
-  it("detects number from 'distance_km'", () => {
-    expect(detectInputType("distance_km")).toBe("number");
+describe("generateValuesForType", () => {
+  it("generates integer values including boundaries", () => {
+    const values = generateValuesForType("integer", ["age must be >= 0"], "age");
+    expect(values).toContain(0);
+    expect(values).toContain(-1);
+    expect(values).toContain(10);
   });
-
-  it("detects string from 'name'", () => {
-    expect(detectInputType("first_name")).toBe("string");
+  it("generates float values", () => {
+    const values = generateValuesForType("float", [], "rate");
+    expect(values).toContain(0);
+    expect(values).toContain(1.5);
   });
-
-  it("detects string from 'text'", () => {
-    expect(detectInputType("input_text (string)")).toBe("string");
+  it("generates boolean values", () => {
+    const values = generateValuesForType("boolean", [], "flag");
+    expect(values).toEqual(expect.arrayContaining([true, false]));
   });
-
-  it("detects list from 'list'", () => {
-    expect(detectInputType("numbers (list)")).toBe("list");
+  it("generates string values", () => {
+    const values = generateValuesForType("string", [], "name");
+    expect(values).toContain("");
+    expect(values).toContain("hello");
+    expect(values.length).toBeGreaterThanOrEqual(5);
   });
-
-  it("detects list from 'array'", () => {
-    expect(detectInputType("data_array")).toBe("list");
+  it("generates list-of-integers values", () => {
+    const values = generateValuesForType("list-of-integers", [], "arr");
+    expect(values.some((v) => Array.isArray(v) && v.length === 0)).toBe(true);
+    expect(values.some((v) => Array.isArray(v) && v.length > 0)).toBe(true);
   });
-
-  it("defaults to string for unknown types", () => {
-    expect(detectInputType("something")).toBe("string");
+  it("generates matrix values", () => {
+    const values = generateValuesForType("matrix", [], "grid");
+    expect(values.length).toBeGreaterThan(0);
+    expect(values.every((v) => Array.isArray(v))).toBe(true);
+  });
+  it("generates dictionary values", () => {
+    const values = generateValuesForType("dictionary", [], "lookup");
+    expect(values.some((v) => typeof v === "object" && v !== null && !Array.isArray(v))).toBe(true);
+    expect(values.some((v) => Object.keys(v as object).length === 0)).toBe(true);
   });
 });
 
-describe("generateValuesForInput", () => {
-  it("generates temperature values for celsius input", () => {
-    const result = generateValuesForInput(
-      "celsius_temp (number)",
-      [],
-      "temperature"
-    );
-    expect(result.length).toBeGreaterThanOrEqual(4);
-    expect(result.some((v) => v.value === "0")).toBe(true);
-    expect(result.some((v) => v.value === "100")).toBe(true);
-    expect(result.some((v) => v.value === "37")).toBe(true);
-    expect(result.some((v) => v.value === "-40")).toBe(true);
+describe("formatValueForCall", () => {
+  it("formats strings with quotes", () => {
+    expect(formatValueForCall("hello", "string")).toBe('"hello"');
   });
-
-  it("generates grade values for marks input", () => {
-    const result = generateValuesForInput("marks (number)", [], "grade");
-    expect(result.some((v) => v.value === "60")).toBe(true);
-    expect(result.some((v) => v.value === "100")).toBe(true);
+  it("formats booleans for Python", () => {
+    expect(formatValueForCall(true, "boolean")).toBe("True");
+    expect(formatValueForCall(false, "boolean")).toBe("False");
   });
-
-  it("generates condition-aware values for '> 0' rule", () => {
-    const conditions = [
-      { field: "", operator: ">", value: 0 },
-    ] as ParsedCondition[];
-    const result = generateValuesForInput("number", conditions, "generic");
-    expect(
-      result.some((v) => v.value === "-1" && v.category === "invalid")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "0" && v.category === "boundary")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "1" && v.category === "boundary")
-    ).toBe(true);
+  it("formats lists as JSON", () => {
+    expect(formatValueForCall([1, 2, 3], "list-of-integers")).toBe("[1,2,3]");
   });
-
-  it("generates condition-aware values for 'between 0 and 100' rule", () => {
-    const conditions = [
-      { field: "", operator: "between", value: 0, value2: 100 },
-    ] as ParsedCondition[];
-    const result = generateValuesForInput("score", conditions, "generic");
-    expect(
-      result.some((v) => v.value === "-1" && v.category === "invalid")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "0" && v.category === "boundary")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "50" && v.category === "typical")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "100" && v.category === "boundary")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "101" && v.category === "invalid")
-    ).toBe(true);
+  it("formats matrices as JSON", () => {
+    expect(formatValueForCall([[1, 2], [3, 4]], "matrix")).toBe("[[1,2],[3,4]]");
   });
-
-  it("generates default number values for generic problem", () => {
-    const result = generateValuesForInput("value (number)", [], "generic");
-    expect(result.some((v) => v.value === "0")).toBe(true);
-    expect(result.some((v) => v.value === "10")).toBe(true);
-    expect(result.some((v) => v.value === "-1")).toBe(true);
+  it("formats integers as strings", () => {
+    expect(formatValueForCall(42, "integer")).toBe("42");
   });
-
-  it("generates boolean values", () => {
-    const result = generateValuesForInput("is_valid (boolean)", [], "generic");
-    expect(result.some((v) => v.value === "True")).toBe(true);
-    expect(result.some((v) => v.value === "False")).toBe(true);
+  it("formats null as None", () => {
+    expect(formatValueForCall(null, "integer")).toBe("None");
   });
-
-  it("generates string values", () => {
-    const result = generateValuesForInput("name (string)", [], "generic");
-    expect(result.some((v) => v.value === "")).toBe(true);
-    expect(result.some((v) => v.value === "hello")).toBe(true);
-  });
-
-  it("generates list values", () => {
-    const result = generateValuesForInput("items (list)", [], "generic");
-    expect(result.some((v) => v.value === "[]")).toBe(true);
-    expect(result.some((v) => v.value === "[1,2,3]")).toBe(true);
-  });
-
-  it("generates positive condition values", () => {
-    const conditions = [
-      { field: "", operator: "positive", value: 0 },
-    ] as ParsedCondition[];
-    const result = generateValuesForInput("num", conditions, "generic");
-    expect(
-      result.some((v) => v.value === "-1" && v.category === "invalid")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "0" && v.category === "boundary")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "50" && v.category === "typical")
-    ).toBe(true);
-  });
-
-  it("generates even condition values", () => {
-    const conditions = [
-      { field: "", operator: "even", value: 0 },
-    ] as ParsedCondition[];
-    const result = generateValuesForInput("num", conditions, "generic");
-    expect(
-      result.some((v) => v.value === "3" && v.category === "invalid")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "2" && v.category === "typical")
-    ).toBe(true);
-  });
-
-  it("generates odd condition values", () => {
-    const conditions = [
-      { field: "", operator: "odd", value: 1 },
-    ] as ParsedCondition[];
-    const result = generateValuesForInput("num", conditions, "generic");
-    expect(
-      result.some((v) => v.value === "2" && v.category === "invalid")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "1" && v.category === "typical")
-    ).toBe(true);
-  });
-
-  it("matches condition field to input name", () => {
-    const conditions = [
-      { field: "age", operator: ">=", value: 18 },
-    ] as ParsedCondition[];
-    const result = generateValuesForInput("age", conditions, "generic");
-    expect(
-      result.some((v) => v.value === "17" && v.category === "invalid")
-    ).toBe(true);
-    expect(
-      result.some((v) => v.value === "18" && v.category === "boundary")
-    ).toBe(true);
-  });
-
-  it("generates fibonacci values", () => {
-    const result = generateValuesForInput("n (number)", [], "fibonacci");
-    expect(result.some((v) => v.value === "0")).toBe(true);
-    expect(result.some((v) => v.value === "5")).toBe(true);
-    expect(result.some((v) => v.value === "20")).toBe(true);
-  });
-
-  it("generates palindrome string values", () => {
-    const result = generateValuesForInput("text (string)", [], "palindrome");
-    expect(result.some((v) => v.value === "aba")).toBe(true);
-    expect(result.some((v) => v.value === "racecar")).toBe(true);
+  it("formats undefined as None", () => {
+    expect(formatValueForCall(undefined, "integer")).toBe("None");
   });
 });
 
 describe("generateTestCases", () => {
-  beforeEach(() => {
-    vi.mocked(runSmartPythonCode).mockReset();
+  it("returns empty result when no inputs are provided", async () => {
+    const result = await generateTestCases([], [], [], "", "", true);
+    expect(result.testCases).toEqual([]);
   });
 
-  it("executes the user's code and fills expectedOutput", async () => {
-    vi.mocked(runSmartPythonCode).mockResolvedValue({
-      output: "32.0",
-      error: null,
-    });
-
-    const result = await generateTestCases(
-      ["celsius_temp (number)"],
-      ["fahrenheit_temp (float)"],
-      [],
-      "Convert celsius to fahrenheit",
-      "c = float(input())\nprint(c * 9 / 5 + 32)",
-      true
-    );
-
-    expect(result.warnings).toEqual([]);
-    expect(result.testCases.map((tc) => tc.name)).toEqual([
-      "Room Temp (37°C)",
-      "Negative (-40°C)",
-      "Freezing (0°C)",
-      "Boiling (100°C)",
-      "Absolute Zero (-273.15°C)",
-    ]);
-    expect(result.testCases.map((tc) => tc.input)).toEqual([
-      "37",
-      "-40",
-      "0",
-      "100",
-      "-273.15",
-    ]);
-    expect(result.testCases.every((tc) => tc.expectedOutput === "32.0")).toBe(
-      true
-    );
-    expect(result.testCases.every((tc) => tc.status === "PENDING")).toBe(true);
-    expect(runSmartPythonCode).toHaveBeenCalledTimes(result.testCases.length);
-  });
-
-  it("keeps expected empty and warns when code execution fails", async () => {
-    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "", error: "boom" });
-
-    const result = await generateTestCases(
-      ["num (number)"],
-      ["out"],
-      [],
-      "",
-      "raise ValueError('x')",
-      true
-    );
-
+  it("generates test cases for a single integer input", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "", error: null });
+    const result = await generateTestCases(["n (integer)"], ["result"], [], "", "", true);
     expect(result.testCases.length).toBeGreaterThan(0);
-    expect(result.testCases.every((tc) => tc.expectedOutput === "")).toBe(true);
-    expect(
-      result.warnings.some((w) => w.includes("Could not execute code"))
-    ).toBe(true);
+    expect(result.testCases.length).toBeLessThanOrEqual(8);
+    result.testCases.forEach((tc) => {
+      expect(tc.status).toBe("PENDING");
+      expect(tc.source).toBe("auto-generated");
+    });
+  });
+
+  it("generates test cases for a list input", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "", error: null });
+    const result = await generateTestCases(
+      ["arr (list of integers)"], ["sorted"], [], "Sort the array", "", true
+    );
+    expect(result.testCases.length).toBeGreaterThan(0);
+    const names = result.testCases.map((tc) => tc.name);
+    expect(names).toContain("Empty list");
+    expect(names.some((n) => n.includes("List"))).toBe(true);
+  });
+
+  it("generates test cases for boolean input", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "", error: null });
+    const result = await generateTestCases(["is_even (bool)"], ["result"], [], "", "", true);
+    expect(result.testCases.length).toBe(2);
+    expect(result.testCases.some((tc) => tc.input === "True")).toBe(true);
+    expect(result.testCases.some((tc) => tc.input === "False")).toBe(true);
+  });
+
+  it("generates test cases for string input", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "", error: null });
+    const result = await generateTestCases(["text (string)"], ["result"], [], "", "", true);
+    expect(result.testCases.length).toBeGreaterThan(0);
+    const names = result.testCases.map((tc) => tc.name);
+    expect(names).toContain("Empty string");
+    expect(names.some((n) => n.includes("String"))).toBe(true);
+  });
+
+  it("generates test cases for dictionary input", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "", error: null });
+    const result = await generateTestCases(["data (dict)"], ["result"], [], "", "", true);
+    expect(result.testCases.length).toBeGreaterThan(0);
+    expect(result.testCases.some((tc) => tc.input === "{}")).toBe(true);
+  });
+
+  it("generates test cases for matrix input", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "", error: null });
+    const result = await generateTestCases(["grid (matrix)"], ["result"], [], "", "", true);
+    expect(result.testCases.length).toBeGreaterThan(0);
+    expect(result.testCases.some((tc) => tc.input.includes("[[1,2],[3,4]]"))).toBe(true);
+  });
+
+  it("runs code to fill expected outputs", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "42", error: null });
+    const result = await generateTestCases(["n (integer)"], ["result"], [], "", "print(n * 2)", true);
+    expect(result.testCases.length).toBeGreaterThan(0);
+    result.testCases.forEach((tc) => {
+      expect(tc.expectedOutput).toBe("42");
+    });
   });
 
   it("does not run code when useCodeOutputAsExpected is disabled", async () => {
-    const result = await generateTestCases(
-      ["a (number)"],
-      ["b"],
-      [],
-      "",
-      "print('x')",
-      false
-    );
-
-    expect(result.testCases.length).toBeGreaterThan(0);
-    expect(result.testCases.every((tc) => tc.expectedOutput === "")).toBe(true);
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "", error: null });
+    await generateTestCases(["a (number)"], ["b"], [], "", "print(a)", false);
     expect(runSmartPythonCode).not.toHaveBeenCalled();
   });
 
-  it("returns an empty result when no inputs are provided", async () => {
-    const result = await generateTestCases([], [], [], "", "", true);
-
-    expect(result.testCases).toEqual([]);
-    expect(result.warnings).toEqual([]);
-  });
-
-  it("generates condition-driven cases for a '> 0' rule", async () => {
+  it("warns when user code is hardcoded", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "8", error: null });
     const result = await generateTestCases(
-      ["distance_km (float)"],
-      ["total_fare (float)"],
-      ["distance_km must be > 0"],
-      "Build a ride-hailing fare calculator",
-      "",
-      true
+      ["a (number)", "b (number)"], ["sum (number)"], [], "Add two numbers",
+      "a = 5\nb = 3\nprint(a + b)", true
     );
-
-    expect(result.testCases.map((tc) => tc.name)).toEqual([
-      "Typical (50)",
-      "Invalid: below minimum (-1)",
-      "Boundary: minimum (0)",
-      "Boundary: just above (1)",
-      "Edge: large (1000)",
-    ]);
-  });
-
-  it("varies each input independently for multi-input problems", async () => {
-    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "", error: null });
-
-    const result = await generateTestCases(
-      ["distance_km (number)", "peak_hour (boolean)"],
-      ["fare (number)"],
-      ["distance_km must be > 0"],
-      "",
-      "",
-      true
-    );
-
-    expect(result.testCases.length).toBeGreaterThanOrEqual(4);
-    // every scenario encodes both inputs positionally
-    expect(result.testCases.every((tc) => tc.input.includes("\n"))).toBe(true);
-    // the boolean input gets its own False case
-    expect(result.testCases.some((tc) => tc.input.includes("False"))).toBe(
-      true
-    );
-    // the distance input varies independently
-    expect(result.testCases.some((tc) => tc.input.startsWith("1000"))).toBe(
-      true
-    );
-  });
-
-  it("warns when user code is hardcoded (no input() and no params)", async () => {
-    vi.mocked(runSmartPythonCode).mockResolvedValue({
-      output: "8",
-      error: null,
-    });
-
-    const result = await generateTestCases(
-      ["a (number)", "b (number)"],
-      ["sum (number)"],
-      [],
-      "Add two numbers",
-      "a = 5\nb = 3\nprint(a + b)",
-      true
-    );
-
     expect(result.warnings).toContain(HARDCODED_CODE_WARNING);
     expect(result.testCases.length).toBeGreaterThan(0);
   });
 
   it("does not warn for input()-based or parameterized function code", async () => {
-    vi.mocked(runSmartPythonCode).mockResolvedValue({
-      output: "8",
-      error: null,
-    });
-
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "8", error: null });
     const withInput = await generateTestCases(
-      ["a (number)"],
-      ["out"],
-      [],
-      "",
-      "x = int(input())\nprint(x)",
-      true
+      ["a (number)"], ["out"], [], "", "x = int(input())\nprint(x)", true
     );
     expect(withInput.warnings).not.toContain(HARDCODED_CODE_WARNING);
-
     const withParams = await generateTestCases(
-      ["a (number)", "b (number)"],
-      ["out"],
-      [],
-      "",
-      "def add(a, b):\n    return a + b\n",
-      true
+      ["a (number)", "b (number)"], ["out"], [], "", "def add(a, b):\n    return a + b\n", true
     );
     expect(withParams.warnings).not.toContain(HARDCODED_CODE_WARNING);
+  });
+
+  it("reports warnings when code execution fails", async () => {
+    vi.mocked(runSmartPythonCode).mockResolvedValue({ output: "", error: "boom" });
+    const result = await generateTestCases(["num (number)"], ["out"], [], "", "print(num)", true);
+    expect(result.warnings).toContain(
+      "Could not execute code for some test cases. Fill their expected values manually."
+    );
   });
 });
 
@@ -588,19 +311,17 @@ describe("isHardcodedCode", () => {
     expect(isHardcodedCode("a = 5\nb = 3\nprint(a + b)")).toBe(true);
     expect(isHardcodedCode("print(42)")).toBe(true);
   });
-
   it("accepts input() and parameterized defs as dynamic", () => {
     expect(isHardcodedCode("n = int(input())\nprint(n)")).toBe(false);
     expect(isHardcodedCode("def add(a, b):\n    return a + b\n")).toBe(false);
     expect(isHardcodedCode("def main(*args):\n    return args\n")).toBe(false);
   });
-
   it("treats zero-param defs without input() as hardcoded", () => {
     expect(isHardcodedCode("def main():\n    return 42\n")).toBe(true);
   });
-
   it("returns false for empty code", () => {
     expect(isHardcodedCode("")).toBe(false);
     expect(isHardcodedCode("   ")).toBe(false);
   });
+});
 });

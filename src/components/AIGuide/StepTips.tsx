@@ -14,13 +14,13 @@ const STEP_TIPS: Record<number, StepTip> = {
   1: {
     title: "Problem Statement",
     tips: [
-      "Start by clearly defining what problem you're solving",
-      "Identify all inputs - what data will you receive?",
-      "Define expected outputs - what should your solution produce?",
-      "List all rules and constraints that must be followed",
+      "Start by clearly defining the problem. What are you solving?",
+      "Identify all inputs. Which data will come in?",
+      "Define the expected outputs. What should the solution produce?",
+      "List all rules and constraints the solution must follow",
     ],
     commonMistakes: [
-      "Being too vague about inputs and outputs",
+      "Leaving inputs and outputs vague",
       "Forgetting edge cases or constraints",
       "Not considering all possible input scenarios",
     ],
@@ -28,15 +28,15 @@ const STEP_TIPS: Record<number, StepTip> = {
   2: {
     title: "Requirements",
     tips: [
-      "List all data structures you'll need to store information",
-      "Identify tools, functions, or libraries that will help",
-      "Think about logical concepts like loops, conditions, sorting",
-      "Consider what pre-processing your data might need",
+      "List the data structures needed to store the data",
+      "Think about which tools, functions, or libraries will help",
+      "Consider logical concepts such as loops, conditions, and sorting",
+      "Check whether the data needs pre-processing",
     ],
     commonMistakes: [
       "Choosing overly complex data structures",
-      "Not thinking about efficiency from the start",
-      "Overlooking built-in Python functions that could help",
+      "Ignoring efficiency from the start",
+      "Overlooking Python's built-in functions",
     ],
   },
   3: {
@@ -44,27 +44,27 @@ const STEP_TIPS: Record<number, StepTip> = {
     tips: [
       "Break the problem into small, manageable steps",
       "Write pseudocode before jumping into real code",
-      "Think about the order of operations carefully",
-      "Consider using flowcharts to visualize logic flow",
+      "Plan the order of operations carefully",
+      "Use a flowchart to visualize the logic flow",
     ],
     commonMistakes: [
-      "Skipping the planning phase and coding directly",
+      "Skipping planning and writing code right away",
       "Creating steps that are too large or complex",
-      "Not thinking through all possible paths in your logic",
+      "Taking shortcuts instead of thinking through all logic paths",
     ],
   },
   4: {
     title: "Code Writing",
     tips: [
       "Follow PEP 8 style guidelines for clean Python",
-      "Use meaningful variable and function names",
+      "Give variables and functions meaningful names",
       "Add comments to explain complex logic",
       "Keep functions small and focused on one task",
     ],
     commonMistakes: [
       "Writing long functions that do too many things",
-      "Using unclear variable names like 'x', 'temp', 'data'",
-      "Not handling potential errors or edge cases",
+      "Using unclear variable names like 'x', 'temp', or 'data'",
+      "Not handling errors or edge cases",
     ],
   },
   5: {
@@ -76,23 +76,23 @@ const STEP_TIPS: Record<number, StepTip> = {
       "Verify each test case manually before running",
     ],
     commonMistakes: [
-      "Only testing the 'happy path' with perfect inputs",
+      "Only testing the happy path with perfect inputs",
       "Not testing edge cases or error conditions",
-      "Assuming the first passing test means the code is correct",
+      "Assuming the code is correct after the first pass",
     ],
   },
   6: {
     title: "Optimization",
     tips: [
       "Look for repeated code that can be simplified",
-      "Consider time complexity - can you reduce loops?",
+      "Consider time complexity. Can loops be reduced?",
       "Check for unnecessary operations or redundant checks",
       "Improve code readability and maintainability",
     ],
     commonMistakes: [
-      "Optimizing too early before verifying correctness",
-      "Making code more complex in pursuit of minor gains",
-      "Sacrificing readability for marginal performance improvements",
+      "Optimizing before verifying correctness",
+      "Making code complex for a tiny gain",
+      "Sacrificing readability for marginal performance",
     ],
   },
 };

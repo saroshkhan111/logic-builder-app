@@ -23,6 +23,7 @@ export const Step6Optimization = () => {
 
   const [ruleInput, setRuleInput] = useState("");
   const [isBenchmarking, setIsBenchmarking] = useState(false);
+  const [benchmarkError, setBenchmarkError] = useState<string | null>(null);
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
@@ -38,9 +39,47 @@ export const Step6Optimization = () => {
     if (ruleInput.trim()) { addOptimizationRule(ruleInput.trim()); setRuleInput(""); }
   };
 
+function guessArgValue(paramName: string, step1Inputs: string[]): string {
+  const name = paramName.toLowerCase();
+  
+  // First: check if Step 1 has input with this name
+  const matchingInput = step1Inputs.find(inp => 
+    inp.toLowerCase().includes(name)
+  );
+  
+  if (matchingInput) {
+    const desc = matchingInput.toLowerCase();
+    if (desc.includes("string") || desc.includes("text")) return '"test"';
+    if (desc.includes("list") || desc.includes("array")) return '[3, 1, 2]';
+    if (desc.includes("float")) return '1.5';
+    if (desc.includes("bool")) return 'True';
+    if (desc.includes("dict")) return '{"a": 1}';
+    if (desc.includes("int") || desc.includes("number")) return '10';
+  }
+  
+  // Second: guess from parameter name
+  if (name.includes("text") || name.includes("str") || name.includes("word")) {
+    return '"test"';
+  }
+  if (name.includes("list") || name.includes("arr") || name.includes("items")) {
+    return '[3, 1, 2]';
+  }
+  if (name.includes("num") || name.includes("count") || name.includes("n")) {
+    return '10';
+  }
+  if (name.includes("float") || name.includes("decimal")) {
+    return '1.5';
+  }
+  
+  // Fallback: try integer (safest)
+  return '10';
+}
+
+
   const handleRunBenchmark = async () => {
     if (isDefaultPythonCode(pythonCode)) return;
     setIsBenchmarking(true);
+    setBenchmarkError(null);
     const runs = 10;
     let totalTime = 0;
     let successCount = 0;
@@ -49,11 +88,8 @@ export const Step6Optimization = () => {
       const funcName = funcMatch ? funcMatch[1] : null;
       const params = funcMatch && funcMatch[2] ? funcMatch[2].split(",").map((p) => p.trim()) : [];
 
-      // Generate test arguments based on parameter count
-      const testArgs = params.map((_, idx) => {
-        const inputVal = inputs.length > idx ? "10" : "0";
-        return inputVal;
-      }).join(", ");
+      // Generate test arguments based on parameter name
+      const testArgs = params.map(p => guessArgValue(p, inputs)).join(", ");
 
       const codeToRun = funcName
         ? `${pythonCode}\nprint(${funcName}(${testArgs}))`
@@ -70,18 +106,35 @@ export const Step6Optimization = () => {
 
       if (successCount > 0) {
         setBenchmarkResult({ avgMs: totalTime / successCount, runs: successCount, timestamp: Date.now() });
+        setBenchmarkError(null);
+            } else {
+        // All 10 runs failed with Python errors — tell the user clearly
+        setBenchmarkError("Benchmark failed — all 10 runs ended with errors. Check the Python code in Step 4.");
       }
     } catch {
-      // Benchmark failed
+      // Pyodide load/execution crash — show a graceful message, do not crash the app
+      setBenchmarkError("Benchmark failed — Pyodide did not load. Reload the page and try again.");
+    } finally {
+      setIsBenchmarking(false);
     }
-    setIsBenchmarking(false);
   };
 
   const handleExportReport = () => {
-    const report = { problem: problemStatement, inputs, outputs, complexity: complexityMetrics, testResults: testCases.map((tc) => ({ name: tc.name, status: tc.status })) };
+    const report = { 
+      problem: problemStatement, 
+      inputs: inputs, 
+      outputs: outputs, 
+      complexity: complexityMetrics, 
+      testResults: testCases.map((tc) => {
+        return { name: tc.name, status: tc.status };
+      }) 
+    };
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `${fileName.replace(".py", "")}-report.json`; a.click();
+    const a = document.createElement("a"); 
+    a.href = url; 
+    a.download = `${fileName.replace(".py", "")}-report.json`; 
+    a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -167,7 +220,7 @@ export const Step6Optimization = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 *:min-w-0">
         <div className="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
           <div className="flex items-center gap-2 text-indigo-400 font-semibold text-xs"><Gauge className="w-4 h-4" /> Complexity Analysis</div>
           {complexityMetrics ? (
@@ -241,10 +294,15 @@ export const Step6Optimization = () => {
                 <div className="flex items-center gap-1 text-[10px] text-slate-500"><TrendingUp className="w-3 h-3" /> {benchmarkResult.runs} runs</div>
               </div>
             )}
+            {benchmarkError && (
+              <div className="text-[10px] text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5">
+                {benchmarkError}
+              </div>
+            )}
           </div>
           <div className="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
             <div className="flex items-center gap-2 text-violet-400 font-semibold text-xs"><ListChecks className="w-4 h-4" /> Summary</div>
-            <div className="space-y-1"><div className="flex justify-between text-[10px]"><span className="text-slate-400">Completion</span><span className="text-white font-semibold">{completionScore}/6</span></div><div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-indigo-500 to-violet-500" style={{ width: `${(completionScore / 6) * 100}%` }} /></div></div>
+            <div className="space-y-1"><div className="flex justify-between text-[10px]"><span className="text-slate-400">Completion</span><span className="text-white font-semibold">{completionScore}/6</span></div><div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-linear-to-r from-indigo-500 to-violet-500" style={{ width: `${(completionScore / 6) * 100}%` }} /></div></div>
           </div>
         </div>
       </div>

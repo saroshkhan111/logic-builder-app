@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MCQQuiz } from "./MCQQuiz";
@@ -17,15 +17,15 @@ vi.mock("@/store/logicFlowStore", () => ({
 }));
 
 const MCQ_PAYLOAD = {
-  question: "Even/odd check karne ke liye kaunsa operator use karte hain?",
+  question: "Which operator checks even/odd?",
   options: ["+ (plus)", "% (modulo)", "* (multiply)", "/ (divide)"],
   correctIndex: 1,
   reasonCorrect:
-    "Modulo (%) remainder deta hai. Agar remainder 0 ho to number even hai.",
+    "Modulo (%) gives the remainder. If the remainder is 0, the number is even.",
   reasonWrong:
-    "Plus sirf jodta hai, remainder nahi deta. Isliye even/odd check nahi ho payega.",
+    "Plus only adds numbers. It does not give a remainder, so it cannot check even/odd.",
   correction:
-    "number % 2 == 0 use karo. Example: if number % 2 == 0: print('Even').",
+    "Use number % 2 == 0. Example: if number % 2 == 0: print('Even').",
   concept: "Modulo operator",
 };
 
@@ -38,8 +38,7 @@ function mockQuizResponse(payload: unknown, ok = true, status = 200) {
 }
 
 async function startQuiz() {
-  fireEvent.click(screen.getByRole("button", { name: /quiz shuru karo/i }));
-  await screen.findByText(MCQ_PAYLOAD.question);
+      fireEvent.click(screen.getByRole("button", { name: /start quiz/i }));
 }
 
 describe("MCQQuiz", () => {
@@ -52,7 +51,7 @@ describe("MCQQuiz", () => {
 
     expect(screen.queryByText(MCQ_PAYLOAD.question)).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /quiz shuru karo/i })
+      screen.getByRole("button", { name: /start quiz/i })
     ).toBeInTheDocument();
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -81,7 +80,9 @@ describe("MCQQuiz", () => {
 
     await startQuiz();
 
-    expect(screen.getByText("Modulo operator")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("Modulo operator")).toBeInTheDocument()
+    );
     expect(screen.getByRole("button", { name: "Option A" })).toHaveTextContent(
       "+ (plus)"
     );
@@ -95,9 +96,12 @@ describe("MCQQuiz", () => {
     render(<MCQQuiz />);
 
     await startQuiz();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Option B" })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole("button", { name: "Option B" }));
 
-    expect(await screen.findByText("Sahi jawab!")).toBeInTheDocument();
+        expect(await screen.findByText("Correct!")).toBeInTheDocument();
     expect(screen.getByText(MCQ_PAYLOAD.reasonCorrect)).toBeInTheDocument();
     expect(screen.queryByText(/correction/i)).not.toBeInTheDocument();
   });
@@ -107,9 +111,12 @@ describe("MCQQuiz", () => {
     render(<MCQQuiz />);
 
     await startQuiz();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Option C" })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole("button", { name: "Option C" }));
 
-    expect(await screen.findByText("Galat - sahi jawab B")).toBeInTheDocument();
+        expect(await screen.findByText("Incorrect - correct answer is B")).toBeInTheDocument();
     expect(screen.getByText(MCQ_PAYLOAD.reasonWrong)).toBeInTheDocument();
     expect(screen.getByText("Correction")).toBeInTheDocument();
     expect(screen.getByText(MCQ_PAYLOAD.correction)).toBeInTheDocument();
@@ -120,22 +127,28 @@ describe("MCQQuiz", () => {
     render(<MCQQuiz />);
 
     await startQuiz();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Option A" })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole("button", { name: "Option A" }));
 
-    expect(await screen.findByText(/galat/i)).toBeInTheDocument();
+        expect(await screen.findByText(/incorrect/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Option B" })).toBeDisabled();
   });
 
   it("loads a new question from the feedback panel", async () => {
     mockQuizResponse(MCQ_PAYLOAD);
-    mockQuizResponse({ ...MCQ_PAYLOAD, question: "Naya sawal?" });
+        mockQuizResponse({ ...MCQ_PAYLOAD, question: "New question?" });
     render(<MCQQuiz />);
 
     await startQuiz();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Option B" })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole("button", { name: "Option B" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Naya sawal" }));
+    fireEvent.click(await screen.findByRole("button", { name: "New question" }));
 
-    expect(await screen.findByText("Naya sawal?")).toBeInTheDocument();
+    expect(await screen.findByText("New question?")).toBeInTheDocument();
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
@@ -143,13 +156,13 @@ describe("MCQQuiz", () => {
     mockQuizResponse({ error: "AI not configured" }, false, 503);
     render(<MCQQuiz />);
 
-    fireEvent.click(screen.getByRole("button", { name: /quiz shuru karo/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start quiz/i }));
 
     expect(
-      await screen.findByText(/quiz generate nahi ho paya/i)
+      await screen.findByText(/quiz could not be generated/i)
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /dobara try karo/i })
+      screen.getByRole("button", { name: /try again/i })
     ).toBeInTheDocument();
   });
 
@@ -157,10 +170,10 @@ describe("MCQQuiz", () => {
     mockQuizResponse({ question: "", options: [] });
     render(<MCQQuiz />);
 
-    fireEvent.click(screen.getByRole("button", { name: /quiz shuru karo/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start quiz/i }));
 
     expect(
-      await screen.findByText(/quiz generate nahi ho paya/i)
+      await screen.findByText(/quiz could not be generated/i)
     ).toBeInTheDocument();
   });
 });

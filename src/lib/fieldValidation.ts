@@ -16,11 +16,11 @@ import { parseJsonObject } from "@/lib/jsonResponse";
 export interface FieldValidationResult {
   /** True when the learner's value is right for this field/problem. */
   isCorrect: boolean;
-  /** Why it is right / wrong (Hinglish, 2 sentences). */
+  /** Why it is right / wrong (simple English, 2 sentences). */
   reason: string;
-  /** How to fix it (Hinglish). Empty when the value is correct. */
+  /** How to fix it (simple English). Empty when the value is correct. */
   correction: string;
-  /** What to focus on in the NEXT field (Hinglish). Empty when wrong. */
+  /** What to focus on in the NEXT field (simple English). Empty when wrong. */
   nextHint: string;
 }
 
@@ -37,34 +37,34 @@ export interface FieldValidationContext {
 }
 /**
  * What the current step expects in each of its fields. Without this the model
- * falls back to generic advice ("variable ka naam sahi rakho") instead of
+ * falls back to generic advice ("use a good variable name") instead of
  * judging the value against this problem.
  */
 const STEP_VALIDATION_GUIDES: Record<number, string> = {
   1: `Step 1 fields:
-- Problem Statement: program kya karega (clear, solvable description)
-- Inputs: kaunsa data receive hoga + data type, e.g. "num (integer)"
-- Outputs: kya produce hoga, e.g. "result (string)" / "Even or Odd"
+- Problem Statement: what the program will do (clear, solvable description)
+- Inputs: which data comes in + its data type, e.g. "num (integer)"
+- Outputs: what it produces, e.g. "result (string)" / "Even or Odd"
 - Rules: conditions / constraints / edge cases of the problem`,
 
   2: `Step 2 fields:
-- Required Data: kaunsa data type chahiye, e.g. "number (integer)"
-- Tools & Functions: kaunsa operator/tool use hoga, e.g. "% operator", "print()"
-- Logical Concepts: kaunsa thinking pattern chahiye, e.g. "IF/ELSE", "loop"`,
+- Required Data: which data type is needed, e.g. "number (integer)"
+- Tools & Functions: which operator/tool will be used, e.g. "% operator", "print()"
+- Logical Concepts: which thinking pattern is needed, e.g. "IF/ELSE", "loop"`,
 
   3: `Step 3 fields:
-- Algorithm: START se END tak ordered pseudocode lines, THIS problem ke variables
-  ke saath (INPUT, SET, IF/ELSE, DISPLAY, END)
-- Pseudocode Steps: algorithm ki numbered lines`,
+- Algorithm: ordered pseudocode lines from START to END, using THIS problem's
+  variables (INPUT, SET, IF/ELSE, DISPLAY, END)
+- Pseudocode Steps: the numbered lines of the algorithm`,
 
   4: `Step 4 fields:
 - File Name: snake_case Python file, e.g. "even_odd.py"
-- Python Code: THIS problem ka valid Python code (def/return/if-else/print)
-- Code Notes: code ka short explanation`,
+- Python Code: valid Python code for THIS problem (def/return/if-else/print)
+- Code Notes: a short explanation of the code`,
 
   5: `Step 5 fields:
 - Test Cases: input + expected output pairs for THIS problem
-- Expected Output: us input ka correct output
+- Expected Output: the correct output for that input
 - Edge Cases: boundary values, e.g. 0, negative, very large`,
 
   6: `Step 6 fields:
@@ -86,7 +86,7 @@ function toText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-/** Accepts `true`/`false` as booleans, numbers or words ("yes", "sahi", ...). */
+/** Accepts `true`/`false` as booleans, numbers or words ("yes", "correct", ...). */
 function toBoolean(value: unknown): boolean | null {
   if (typeof value === "boolean") return value;
 
@@ -98,8 +98,8 @@ function toBoolean(value: unknown): boolean | null {
 
   if (typeof value === "string") {
     const text = value.trim().toLowerCase();
-    if (["true", "yes", "correct", "sahi", "1"].includes(text)) return true;
-    if (["false", "no", "incorrect", "galat", "0"].includes(text)) return false;
+    if (["true", "yes", "correct", "1"].includes(text)) return true;
+    if (["false", "no", "incorrect", "0"].includes(text)) return false;
   }
 
   return null;
@@ -153,20 +153,20 @@ Check if the user's input is CORRECT for THIS field in THIS problem.
    (e.g. Inputs need data + type, Required Data needs a data type,
    File Name needs snake_case ".py", Test Cases need input + expected output)
 3. Accept a short, beginner-level answer when it is right for THIS problem
-4. "reason" explains WHY it is right/wrong in Hinglish (2 sentences max)
-5. "correction" shows how to fix it in Hinglish. Use "" when it is correct
-6. "nextHint" is a short hint for the NEXT field in Hinglish, only when correct
+4. "reason" explains WHY it is right/wrong in simple English (2 sentences max)
+5. "correction" shows how to fix it in simple English. Use "" when it is correct
+6. "nextHint" is a short hint for the NEXT field in simple English, only when correct
    ("" when the answer is wrong)
-7. Hinglish for explanations, technical terms in English
+7. Use simple, beginner-friendly English. Technical terms can stay English
 8. Keep every value on one line: no code blocks, no line breaks
 
 === RETURN ONLY JSON ===
 Return ONLY valid JSON (no markdown, no text outside the JSON):
 {
   "isCorrect": true,
-  "reason": "Kyun sahi/galat hai (Hinglish)",
-  "correction": "Agar galat hai toh sahi kaise karein (Hinglish)",
-  "nextHint": "Agle field ke liye short hint (Hinglish, only if correct)"
+  "reason": "Why it is correct or wrong (simple English)",
+  "correction": "How to fix it if it is wrong (simple English)",
+  "nextHint": "A short hint for the next field (simple English, only if correct)"
 }`;
 }
 

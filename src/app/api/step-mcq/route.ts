@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { callGroqWithFallback } from "@/lib/groqModels";
 import { buildStepMCQPrompt, parseStepMCQ } from "@/lib/stepMcq";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-// Same Groq setup as /api/ai-chat (key stays server-side).
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "openai/gpt-oss-120b";
+// Same Groq setup as /api/ai-chat (key stays server-side),
+// with multi-model fallback handled by callGroqWithFallback.
 
 interface StepMCQRequest {
   step?: number;
@@ -48,35 +48,16 @@ export async function POST(req: NextRequest) {
       currentField,
     });
 
-    const response = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.5,
-        // The quiz JSON is long and gpt-oss also spends hidden reasoning
-        // tokens, so "low" effort + 1200 tokens keep the JSON from being cut
-        // off mid-string (which would make the whole quiz unusable).
-        reasoning_effort: "low",
-        max_tokens: 1200,
-      }),
+    // Multi-model fallback: tries gpt-oss-120b, then llama-3.3-70b, then qwen3-32b.
+    const { content: rawContent } = await callGroqWithFallback({
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.5,
+      // The quiz JSON is long and gpt-oss also spends hidden reasoning
+      // tokens, so "low" effort + 1200 tokens keep the JSON from being cut
+      // off mid-string (which would make the whole quiz unusable).
+      reasoning_effort: "low",
+      max_tokens: 1200,
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[STEP-MCQ] Groq error:", errorText);
-      return NextResponse.json(
-        { error: `Groq API error: ${response.status}` },
-        { status: 500 }
-      );
-    }
-
-    const data = await response.json();
-    const rawContent: string = data.choices?.[0]?.message?.content || "";
     const mcq = parseStepMCQ(rawContent);
 
     if (!mcq) {

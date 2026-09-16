@@ -81,7 +81,7 @@ export const MCQQuiz = () => {
       setQuizStep(stepAtRequest);
       setFailure({
         step: stepAtRequest,
-        message: "Sorry, abhi quiz generate nahi ho paya. Dobara try karo.",
+        message: "Sorry, the quiz could not be generated. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -108,8 +108,8 @@ export const MCQQuiz = () => {
         <button
           onClick={generateQuiz}
           disabled={isLoading}
-          aria-label="Naya sawal lao"
-          title="Naya sawal lao"
+          aria-label="Load a new question"
+          title="Load a new question"
           className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed"
         >
           {isLoading ? (
@@ -124,7 +124,7 @@ export const MCQQuiz = () => {
       {isLoading && (
         <div className="flex items-center gap-2 text-sm text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
-          Sawal ban raha hai...
+          Generating question...
         </div>
       )}
 
@@ -137,7 +137,7 @@ export const MCQQuiz = () => {
             className="flex items-center gap-2 text-xs font-medium text-rose-300 transition-colors hover:text-rose-200"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Dobara try karo
+            Try again
           </button>
         </div>
       )}
@@ -146,15 +146,15 @@ export const MCQQuiz = () => {
       {!isLoading && !error && !mcq && (
         <div className="space-y-3">
           <p className="text-sm text-slate-300">
-            Is step par tumne kitna samjha, wo check karo. Main ek Hinglish
-            multiple-choice sawal banaunga.
+            Check how much you understood from this step. I will create one
+            multiple-choice question.
           </p>
           <button
             onClick={generateQuiz}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
           >
             <Sparkles className="h-4 w-4" />
-            Quiz shuru karo
+            Start quiz
           </button>
         </div>
       )}
@@ -233,8 +233,8 @@ export const MCQQuiz = () => {
                   }`}
                 >
                   {isCorrect
-                    ? "Sahi jawab!"
-                    : `Galat - sahi jawab ${optionLabel(mcq.correctIndex)}`}
+                    ? "Correct!"
+                    : `Incorrect - correct answer is ${optionLabel(mcq.correctIndex)}`}
                 </span>
               </div>
 
@@ -261,7 +261,7 @@ export const MCQQuiz = () => {
                 className="flex items-center gap-2 text-xs font-medium text-indigo-300 transition-colors hover:text-indigo-200"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                Naya sawal
+                New question
               </button>
             </div>
           )}

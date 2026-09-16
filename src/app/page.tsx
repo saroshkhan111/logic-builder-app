@@ -57,7 +57,7 @@ export default function HomePage() {
       {/* Main Body */}
       <div className="flex-1 flex flex-col md:flex-row">
         {/* Sidebar - 6 Steps Visual Stepper */}
-        <aside className="w-full md:w-80 border-r border-slate-800 bg-slate-900/30 p-6">
+        <aside className="w-full md:w-80 shrink-0 border-r border-slate-800 bg-slate-900/30 p-6">
           <h2 className="text-xs uppercase font-semibold text-slate-400 tracking-wider mb-4">6 Logic Steps</h2>
           <nav className="space-y-3">
             {STEPS.map((s) => {
@@ -86,8 +86,9 @@ export default function HomePage() {
           </nav>
         </aside>
 
-        {/* Content Workspace */}
-        <main className="flex-1 p-6 md:p-10 max-w-4xl">
+        {/* Content Workspace — min-w-0 lets it shrink when the AI Guide opens
+            instead of overflowing the viewport (which clipped boxes) */}
+        <main className="min-w-0 flex-1 p-6 md:p-10 max-w-4xl">
           {currentStep === 1 && <Step1Problem />}
           {currentStep === 2 && <Step2Requirements />}
           {currentStep === 3 && <Step3Algorithm />}

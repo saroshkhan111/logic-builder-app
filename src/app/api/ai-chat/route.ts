@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { parseAIChatResponse } from "@/lib/aiChatResponse";
+import { callGroqWithFallback } from "@/lib/groqModels";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -23,7 +24,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const systemPrompt = `You are a friendly programming tutor for beginners (Hinglish).
+        const systemPrompt = `You are a friendly programming tutor for beginners.
+Respond in simple, beginner-friendly English. Use short sentences. No Roman Urdu
+or Hindi. Technical terms can stay English.
 Context:
 - Step: ${currentStep}/6
 - Problem: ${problemStatement || "Not defined"}
@@ -33,13 +36,13 @@ Context:
 
 Always answer with STRICT JSON only (no markdown, no text outside JSON):
 {
-  "reply": "2-4 sentence Hinglish answer, specific and with a small Python example",
+  "reply": "2-4 sentence simple English answer, specific and with a small Python example",
   "correction": "What the learner did wrong + how to fix it + one short example of the correct approach"
 }
 
 Rules for "correction":
-1. Say exactly what the learner got wrong (e.g. "Tumne string choose kiya...").
-2. Explain how to fix it in simple Hinglish, step by step.
+1. Say exactly what the learner got wrong (e.g. "You chose a string...").
+2. Explain how to fix it in simple English, step by step.
 3. Give one tiny example of the correct approach, always in Python.
 4. If the learner has not made any mistake, use an empty string.`;
 
@@ -52,38 +55,16 @@ Rules for "correction":
         content: msg.content,
       }));
 
-    const response = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-oss-120b",
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...historyMessages,
-            { role: "user", content: message },
-          ],
-          temperature: 0.7,
-          max_tokens: 500,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[AI-CHAT] Groq error:", errorText);
-      return NextResponse.json(
-        { error: `Groq API error: ${response.status}` },
-        { status: 500 }
-      );
-    }
-
-    const data = await response.json();
-    const rawContent: string = data.choices?.[0]?.message?.content || "";
+    // Multi-model fallback: tries gpt-oss-120b, then llama-3.3-70b, then qwen3-32b.
+    const { content: rawContent } = await callGroqWithFallback({
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...historyMessages,
+        { role: "user", content: message },
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+    });
     const { reply, correction } = parseAIChatResponse(rawContent);
 
     return NextResponse.json({

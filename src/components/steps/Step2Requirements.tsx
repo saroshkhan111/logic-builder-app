@@ -105,7 +105,7 @@ export const Step2Requirements = () => {
             { label: "Rules", values: rules, color: "amber" },
           ]}
         />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 [&>*]:min-w-0">
           {/* Required Data Panel */}
           <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-4">
             <label className="text-xs font-semibold text-slate-300 block">

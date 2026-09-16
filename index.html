@@ -215,7 +215,7 @@
                                     <span class="text-[10px] text-emerald-400 font-mono"><i class="fa-solid fa-bolt"></i> Real-time Line Sync</span>
                                 </div>
                                 <textarea id="input-formula" rows="3" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs font-mono text-emerald-400 focus:outline-none focus:border-emerald-500 leading-relaxed resize-y" placeholder="Type step 1 formula...&#10;Type step 2 formula (optional)...">3.14159 * radius ** 2</textarea>
-                                <p class="text-[10px] text-slate-500 mt-1">Tip: Har line par ek calculation ya condition (`if x == y`) likhein. Jaise hi pehli line likhenge, Flowchart aur Pseudocode ki 1st line forn ban jayegi!</p>
+                                <p class="text-[10px] text-slate-500 mt-1">Tip: Write one calculation or condition per line (for example, `if x == y`). As soon as you write the first line, the Flowchart and Pseudocode first line appears!</p>
                             </div>
                         </div>
                     </div>
@@ -344,11 +344,11 @@
                     <div id="card-step-1" class="step-content-card bg-slate-900 border border-blue-500/30 rounded-xl p-5 space-y-3 shadow-lg">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
                             <h3 class="text-sm font-bold text-blue-400 flex items-center gap-2">
-                                <i class="fa-solid fa-file-contract text-base"></i> Step 1: Problem Statement (Sawal Ko Samjho)
+                                <i class="fa-solid fa-file-contract text-base"></i> Step 1: Problem Statement (Understand the Problem)
                             </h3>
                             <span class="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-mono">Input / Output / Constraints</span>
                         </div>
-                        <p class="text-xs text-slate-300 italic">Pehle problem ko poori tarah samjho. Kya input mila hai, kya output chahiye, aur kya restrictions hain?</p>
+                        <p class="text-xs text-slate-300 italic">First understand the problem fully. What input is given, what output is needed, and what restrictions apply?</p>
 
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                             <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
@@ -702,9 +702,9 @@ print("Interest:", simple_interest)</pre>
             <button id="btn-close-ai-modal" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <h3 class="text-lg font-bold text-white">AI Personal Teacher (Roman Urdu)</h3>
+            <h3 class="text-lg font-bold text-white">AI Personal Teacher</h3>
             <textarea id="ai-problem-input" rows="3" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none" placeholder="e.g. Write a program to calculate simple interest."></textarea>
-            <button id="btn-ask-ai" class="w-full py-2 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-lg text-xs transition">
+            <button id="btn-ask-ai" class="w-full py-2 bg-linear-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-lg text-xs transition">
                 Generate 6-Step Breakdown
             </button>
             <div id="ai-response-box" class="bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs text-slate-300 min-h-[140px] hidden overflow-y-auto"></div>
@@ -1154,9 +1154,9 @@ print("Interest:", simple_interest)</pre>
             if (!query) return;
 
             aiResponseBox.classList.remove('hidden');
-            aiResponseBox.innerHTML = `<div class="text-indigo-400 p-3 flex items-center gap-2"><i class="fa-solid fa-circle-notch fa-spin text-base"></i> <span class="font-medium">Apka Personal AI Teacher soch raha hai... Module 10 breakdown tayyar ho raha hai...</span></div>`;
+            aiResponseBox.innerHTML = `<div class="text-indigo-400 p-3 flex items-center gap-2"><i class="fa-solid fa-circle-notch fa-spin text-base"></i> <span class="font-medium">Your personal AI teacher is thinking... The Module 10 breakdown is on the way...</span></div>`;
 
-            const systemPrompt = "You are 'Apka Personal AI Teacher' teaching Python problem solving in Roman Urdu spoon-feeding style based on Module 10 PDF rules. Always format responses clearly into 6 PDF steps: Step 1: Problem Statement, Step 2: Requirements, Step 3: Algorithm (Pseudocode & Flowchart), Step 4: Code, Step 5: Testing, Step 6: Optimization. Use clean markdown formatting with bold headings, bullet points, and code blocks.";
+            const systemPrompt = "You are 'Your Personal AI Teacher' teaching Python problem solving in simple, beginner-friendly English based on Module 10 PDF rules. Always format responses clearly into 6 PDF steps: Step 1: Problem Statement, Step 2: Requirements, Step 3: Algorithm (Pseudocode & Flowchart), Step 4: Code, Step 5: Testing, Step 6: Optimization. Use clean markdown formatting with bold headings, bullet points, and code blocks.";
             const apiKey = "";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
@@ -1187,7 +1187,7 @@ print("Interest:", simple_interest)</pre>
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Solve this problem using Module 10 steps in Roman Urdu:\n${query}` }] }],
+                        contents: [{ parts: [{ text: `Solve this problem using Module 10 steps:\n${query}` }] }],
                         systemInstruction: { parts: [{ text: systemPrompt }] }
                     })
                 });
@@ -1203,7 +1203,7 @@ print("Interest:", simple_interest)</pre>
                 if (resultText) {
                     aiResponseBox.innerHTML = `<div class="prose prose-invert max-w-none text-xs text-slate-200 leading-relaxed space-y-2 p-1">${parseMarkdownToHTML(resultText)}</div>`;
                 } else {
-                    aiResponseBox.innerHTML = `<div class="p-3 text-rose-400 font-semibold bg-rose-500/10 rounded-lg border border-rose-500/20 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> AI ne response text send nahi kiya. Dubara 'Generate 6-Step Breakdown' par click karein.</div>`;
+                    aiResponseBox.innerHTML = `<div class="p-3 text-rose-400 font-semibold bg-rose-500/10 rounded-lg border border-rose-500/20 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> The AI did not send response text. Click 'Generate 6-Step Breakdown' again.</div>`;
                 }
             } catch (err) {
                 console.error("AI Teacher Error:", err);

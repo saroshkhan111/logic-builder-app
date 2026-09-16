@@ -23,9 +23,9 @@ _Generated: 2026-09-15 · Branch: `main` · Baseline commit: `fb88223` "feat: sw
 
 ### B. Sequential AI field validation (Steps 1–6)
 - `src/app/api/field-validate/route.ts` — judges ONE field against the problem context.
-- `src/lib/fieldValidation.ts` — per-step "what this field expects" guides; Hinglish `reason` / `correction` / `nextHint`.
+- `src/lib/fieldValidation.ts` — per-step "what this field expects" guides; English `reason` / `correction` / `nextHint`.
 - `src/lib/useFieldValidation.ts` — 1 s debounce, sequence gating (field N only checked after N−1 accepted), stale-response guards, 100-entry FIFO cache, fail-open on AI failure.
-- `src/components/validation/StepFieldValidation.tsx` — checklist footer with ✅ Sahi / ❌ Galat rows, "Agla focus" hint; **Next is locked until every field is correct** (AI-unavailable fields do not block).
+- `src/components/validation/StepFieldValidation.tsx` — checklist footer with ✅ Correct / ❌ Incorrect rows, "Next focus" hint; **Next is locked until every field is correct** (AI-unavailable fields do not block).
 - All 6 Step components replaced their free navigation buttons with this gate.
 
 ### C. Shared AI-response infrastructure

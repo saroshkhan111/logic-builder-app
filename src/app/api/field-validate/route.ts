@@ -4,13 +4,13 @@ import {
   buildFieldValidationPrompt,
   parseFieldValidation,
 } from "@/lib/fieldValidation";
+import { callGroqWithFallback } from "@/lib/groqModels";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-// Same Groq setup as /api/step-mcq (key stays server-side).
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "openai/gpt-oss-120b";
+// Same Groq setup as /api/step-mcq (key stays server-side),
+// with multi-model fallback handled by callGroqWithFallback.
 
 interface FieldValidateRequest {
   step?: number;
@@ -55,34 +55,15 @@ export async function POST(req: NextRequest) {
       existingData,
     });
 
-    const response = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-        // Validation is a small verdict + reason, so a low effort / small budget
-        // keeps the JSON from being cut off mid-string.
-        reasoning_effort: "low",
-        max_tokens: 500,
-      }),
+    // Multi-model fallback: tries gpt-oss-120b, then llama-3.3-70b, then qwen3-32b.
+    const { content: rawContent } = await callGroqWithFallback({
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
+      // Validation is a small verdict + reason, so a low effort / small budget
+      // keeps the JSON from being cut off mid-string.
+      reasoning_effort: "low",
+      max_tokens: 500,
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[FIELD-VALIDATE] Groq error:", errorText);
-      return NextResponse.json(
-        { error: `Groq API error: ${response.status}` },
-        { status: 500 }
-      );
-    }
-
-    const data = await response.json();
-    const rawContent: string = data.choices?.[0]?.message?.content || "";
     const validation = parseFieldValidation(rawContent);
 
     if (!validation) {

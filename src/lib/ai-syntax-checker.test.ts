@@ -111,7 +111,7 @@ describe('analyzeWithAI', () => {
                 type: 'structure',
               }],
               overallFeedback: 'Good!',
-              correction: 'Tumne string choose kiya. Even/odd ke liye integer chahiye.',
+              correction: 'You chose a string. Even/odd needs an integer.',
               complexity: 'medium',
             }),
           },
@@ -122,11 +122,24 @@ describe('analyzeWithAI', () => {
     const result = await analyzeWithAI('IF marks >= 90');
     expect(result.aiAnalyzed).toBe(true);
     expect(result.issues).toHaveLength(1);
-    expect(result.issues[0].message).toBe('Missing THEN');
+
+    const issue = result.issues[0];
+    expect(issue.line).toBe(1);
+    expect(issue.type).toBe('structure');
+    // The AI's message lands in the beginner-friendly explanation slot.
+    expect(issue.explanation).toBe('Missing THEN');
+    // The title comes from the per-type map (simple English), not from the model.
+    expect(issue.title).toBe('Block is not complete');
+    // The AI's fix doubles as the example + one-click fixed line.
+    expect(issue.example).toBe('IF marks >= 90 THEN');
+    expect(issue.fixedLine).toBe('IF marks >= 90 THEN');
+    // The learner's own line at that position is attached for context.
+    expect(issue.originalLine).toBe('IF marks >= 90');
+
     expect(result.complexity).toBe('medium');
     expect(result.overallFeedback).toBe('Good!');
     expect(result.correction).toBe(
-      'Tumne string choose kiya. Even/odd ke liye integer chahiye.'
+      'You chose a string. Even/odd needs an integer.'
     );
   });
 
@@ -218,7 +231,8 @@ describe('analyzeWithAI', () => {
     const result = await analyzeWithAI('START\nDISPLAY\nEND');
     expect(result.aiAnalyzed).toBe(true);
     expect(result.issues).toHaveLength(1);
-    expect(result.issues[0].message).toBe('First line\nSecond line');
+    expect(result.issues[0].explanation).toBe('First line\nSecond line');
+    expect(result.issues[0].originalLine).toBe('DISPLAY');
     expect(result.overallFeedback).toBe('Almost\ngreat!');
   });
 
@@ -246,7 +260,9 @@ describe('analyzeWithAI', () => {
     const result = await analyzeWithAI('DISPLAY "test"');
     expect(result.aiAnalyzed).toBe(true);
     expect(result.issues).toHaveLength(1);
-    expect(result.issues[0].message).toBe('Valid issue');
+    expect(result.issues[0].explanation).toBe('Valid issue');
+    expect(result.issues[0].originalLine).toBe('DISPLAY "test"');
+    expect(result.issues[0].title).toBe('Block is not complete');
   });
 });
 

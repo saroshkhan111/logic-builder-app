@@ -5,7 +5,7 @@ import { parseJsonObject } from "@/lib/jsonResponse";
  *
  * The tutor model is asked to answer with strict JSON so the UI can show two
  * things:
- * - `reply`      → the normal Hinglish answer
+ * - `reply`      → the normal English answer
  * - `correction` → what the learner did wrong, how to fix it, and an example
  *                  of the correct approach (empty when nothing is wrong)
  *
@@ -15,7 +15,7 @@ import { parseJsonObject } from "@/lib/jsonResponse";
  */
 
 export interface AIChatResponse {
-  /** The tutor's normal answer (Hinglish, 2-4 sentences). */
+  /** The tutor's normal answer (English, 2-4 sentences). */
   reply: string;
   /**
    * What the learner did wrong + how to fix it + one example of the correct

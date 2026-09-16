@@ -24,7 +24,7 @@ export const AIGuideSidebar = () => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <aside className="flex h-full w-80 flex-col border-l border-slate-800 bg-slate-900/50">
+    <aside className="flex h-full w-full shrink-0 flex-col border-l border-slate-800 bg-slate-900/50 md:w-80">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-800 p-4">
         <div className="flex items-center gap-2">

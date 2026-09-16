@@ -11,17 +11,17 @@ import { normalizeCorrection } from "@/lib/aiChatResponse";
 import { parseJsonObject } from "@/lib/jsonResponse";
 
 export interface StepMCQ {
-  /** The question shown to the learner (Hinglish). */
+    /** The question shown to the learner (simple English). */
   question: string;
   /** Answer choices; the model is asked for 4 but any count >= 2 is accepted. */
   options: string[];
   /** 0-based index of the correct option inside `options`. */
   correctIndex: number;
-  /** Why the correct option is right (Hinglish, 2 sentences). */
+  /** Why the correct option is right (simple English, 2 sentences). */
   reasonCorrect: string;
-  /** Why the picked option is wrong (Hinglish, 2 sentences). */
+  /** Why the picked option is wrong (simple English, 2 sentences). */
   reasonWrong: string;
-  /** How to fix it + one example (Hinglish). Empty when there is nothing to fix. */
+  /** How to fix it + one example (simple English). Empty when there is nothing to fix. */
   correction: string;
   /** Short English label for the idea being tested. */
   concept: string;
@@ -52,16 +52,16 @@ export const MCQ_OPTION_COUNT = 4;
  */
 const STEP_MCQ_FIELDS: Record<number, string> = {
   1: `STEP 1 FIELDS:
-- Problem Statement: "Yeh program kya karega?"
-- Inputs: "Kaunsa data receive hoga?"
-- Outputs: "Kya produce hoga?"
-- Rules: "Kya conditions hain?"
+- Problem Statement: "What will this program do?"
+- Inputs: "What data will come in?"
+- Outputs: "What will be produced?"
+- Rules: "What are the conditions?"
 Ask about the SPECIFIC FIELD the user is currently working on.`,
 
   2: `STEP 2 FIELDS:
-- Required Data: "Kaunsa data type chahiye?" (integer, string, float)
-- Tools & Functions: "Kaunsa operator use hoga?" (%, +, ==, print)
-- Logical Concepts: "Kya thinking pattern chahiye?" (IF/ELSE, loop)
+- Required Data: "Which data type is needed?" (integer, string, float)
+- Tools & Functions: "Which operator/tool will be used?" (%, +, ==, print)
+- Logical Concepts: "Which thinking pattern is needed?" (IF/ELSE, loop)
 
 CRITICAL: Do NOT ask about problem inputs here. Ask about:
 - Which data type is needed for THIS problem's input
@@ -69,36 +69,36 @@ CRITICAL: Do NOT ask about problem inputs here. Ask about:
 - Which logical concept applies
 
 Example questions for Step 2:
-- "Even/Odd check ke liye Required Data kya hoga?" -> integer
-- "Even/Odd check ke liye kaunsa operator use hoga?" -> %
-- "Even/Odd check ke liye kaunsa concept chahiye?" -> IF/ELSE`,
+- "What is the Required Data for an even/odd check?" -> integer
+- "Which operator checks even/odd?" -> %
+- "Which concept checks even/odd?" -> IF/ELSE`,
 
-  3: `STEP 3 FIELDS:
-- Algorithm Writer: "Algorithm ki pehli line kya hogi?" (START)
-- Decision: "IF condition kaise likhenge?" (IF number % 2 == 0)
-- Display: "Output kaise dikhayenge?" (DISPLAY "Even")
-- End: "Algorithm kaise end karenge?" (END)
+    3: `STEP 3 FIELDS:
+- Algorithm Writer: "What is the first line of the algorithm?" (START)
+- Decision: "How do we write the IF condition?" (IF number % 2 == 0)
+- Display: "How do we show the output?" (DISPLAY "Even")
+- End: "How does the algorithm end?" (END)
 
 Ask about SPECIFIC algorithm lines using THIS problem's variables.`,
 
   4: `STEP 4 FIELDS:
-- File Name: "Python file ka naam kya hoga?" (even_odd.py)
-- Function Definition: "Function kaise define karenge?" (def check_even_odd)
-- Condition: "If condition kaise likhenge?" (if number % 2 == 0)
-- Return: "Kya return karenge?" (return "Even")
+- File Name: "What is the Python file name?" (even_odd.py)
+- Function Definition: "How do we define the function?" (def check_even_odd)
+- Condition: "How do we write the if condition?" (if number % 2 == 0)
+- Return: "What do we return?" (return "Even")
 
 Ask about PYTHON SYNTAX for THIS problem.`,
 
   5: `STEP 5 FIELDS:
-- Test Cases: "Kaunsa test case boundary hai?" (number = 0)
-- Expected Output: "Is input ka output kya hoga?"
-- Edge Cases: "Kaunsa edge case test karenge?" (number = -1, 1000)
+- Test Cases: "Which test case is a boundary case?" (number = 0)
+- Expected Output: "What output will this input give?"
+- Edge Cases: "Which edge case will we test?" (number = -1, 1000)
 
 Ask about TEST CASES specific to THIS problem.`,
 
   6: `STEP 6 FIELDS:
-- Complexity: "Time complexity kya hai?" (O(1))
-- Optimization: "Code improve kaise karenge?"
+- Complexity: "What is the time complexity?" (O(1))
+- Optimization: "How can we improve the code?"
 
 Ask about OPTIMIZATION of THIS problem.`,
 };
@@ -169,7 +169,11 @@ export function buildStepMCQPrompt({
     ? `\nUser is currently working on: "${focusedField}"\nAsk about THIS specific field.`
     : "";
 
-  return `You are a programming tutor for beginners (Hinglish).
+    return `You are a friendly programming tutor for beginners.
+
+Respond in simple, beginner-friendly English. Use short sentences. No Roman Urdu
+or Hindi. Technical terms can stay English.
+
 Write ONE multiple-choice quiz question about the step the learner is on right now.
 
 === PROBLEM ===
@@ -190,7 +194,7 @@ ${currentFieldContext}
 4. For Step 2: ask about data types, operators, concepts - NOT problem inputs
 5. Options: ${MCQ_OPTION_COUNT} (1 correct, 3 wrong, all different and short,
    max 10 words each)
-6. Reasons in Hinglish, technical terms in English
+6. Reasons in simple English. Technical terms can stay English
 7. Options must be realistic choices (1 correct, 3 plausible wrong)
 8. Reason must explain WHY it's correct/wrong FOR THIS PROBLEM
 9. Correction should show HOW to fix using THIS PROBLEM's example
@@ -209,50 +213,50 @@ Study the STYLE only. Do NOT reuse the even/odd content below unless the
 problem in the context above is actually about even/odd checks.
 
 Step 1 BAD (generic):
-"Input kya hota hai?"
+"How would you write the question in English?"
 Options: Data, Function, Loop, Variable
 
 Step 1 GOOD (specific):
-"Even/Odd check karne ke liye input kya hona chahiye?"
+"What input does an even/odd check need?"
 Options:
-A) ek integer number (correct - even/odd sirf integers pe hota hai)
-B) ek string name (wrong - string se check nahi hota)
-C) ek float value (wrong - float ke liye different logic)
-D) kuch bhi (wrong - specific data type chahiye)
+A) an integer number (correct - even/odd works on integers only)
+B) a string name (wrong - strings cannot be checked for even/odd)
+C) a float value (wrong - floats need different logic)
+D) anything (wrong - a specific data type is needed)
 
 Step 2 BAD (asks about Step 1 instead of Step 2):
-"Input kya hota hai?"
+"What is an input?"
 Options: Data, Function, Loop, Variable
 
 Step 2 GOOD (asks about a Step 2 field):
-"Even/Odd check ke liye Required Data kya hoga?"
+"What is the Required Data for an even/odd check?"
 Options:
-A) integer (correct - even/odd sirf integer pe check hota hai)
-B) string (wrong - string pe modulo check nahi hota)
-C) float (wrong - float ke liye alag logic chahiye)
-D) list (wrong - yeh data type is problem ke liye nahi hai)
+A) integer (correct - even/odd is checked on integers only)
+B) string (wrong - modulo does not work on strings)
+C) float (wrong - floats need different logic)
+D) list (wrong - this data type does not fit this problem)
 
 Step 3 BAD (generic):
-"Algorithm mein pehla keyword kya hota hai?"
+"What is the first keyword in the algorithm?"
 Options: DISPLAY, START, INPUT, SET
 
 Step 3 GOOD (specific):
-"Even/Odd algorithm mein number check karne ke liye konsi line sahi hai?"
+"Which line checks the number in the even/odd algorithm?"
 Options:
 A) IF number % 2 == 0 THEN (correct - modulo check)
-B) IF number > 0 THEN (wrong - yeh sirf positive check karta hai)
-C) IF number == 2 THEN (wrong - sirf 2 check karta hai)
-D) IF number * 2 THEN (wrong - multiplication se check nahi hota)
+B) IF number > 0 THEN (wrong - this only checks positive numbers)
+C) IF number == 2 THEN (wrong - this only checks the number 2)
+D) IF number * 2 THEN (wrong - multiplication cannot check even/odd)
 
 === RETURN ONLY JSON ===
 Return ONLY valid JSON (no markdown, no text outside the JSON):
 {
-  "question": "Problem-specific sawal (Hinglish)",
+  "question": "Problem-specific question (simple English)",
   "options": ["A text", "B text", "C text", "D text"],
   "correctIndex": 0,
-  "reasonCorrect": "Sahi hai kyunki... (problem-specific reason)",
-  "reasonWrong": "Galat hai kyunki... (problem-specific reason)",
-  "correction": "Sahi tarika... (with THIS problem's example)",
+  "reasonCorrect": "It is correct because... (problem-specific reason)",
+  "reasonWrong": "It is wrong because... (problem-specific reason)",
+  "correction": "The correct way... (with THIS problem's example)",
   "concept": "Short concept name (e.g. Modulo check, Function syntax)"
 }`;
 }

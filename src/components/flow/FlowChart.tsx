@@ -181,8 +181,14 @@ export default function FlowChart({ nodes }: Props) {
   const { positioned, totalH } = layoutNodes(nodes);
 
   return (
-    <div className="overflow-auto max-h-[560px] bg-slate-950 border border-slate-800 rounded-xl p-2">
-      <svg width={SVG_W} height={totalH} className="mx-auto block">
+    <div className="max-h-[560px] overflow-x-hidden overflow-y-auto bg-slate-950 border border-slate-800 rounded-xl p-2">
+      <svg
+        viewBox={`0 0 ${SVG_W} ${totalH}`}
+        preserveAspectRatio="xMidYMin meet"
+        className="mx-auto block h-auto w-full"
+        role="img"
+        aria-label="Auto-generated flowchart"
+      >
         <defs>
           <marker
             id="arrow"

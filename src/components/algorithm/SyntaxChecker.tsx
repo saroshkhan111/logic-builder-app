@@ -68,7 +68,7 @@ export function SyntaxChecker({ issues, onFix, isLoading, overallFeedback, corre
         ) : issues.length === 0 ? (
           <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            All Good
+            All good
           </span>
         ) : (
           <div className="flex items-center gap-2 text-[10px]">
@@ -125,7 +125,7 @@ export function SyntaxChecker({ issues, onFix, isLoading, overallFeedback, corre
       {/* Issues List */}
       {issues.length === 0 ? (
         <div className="text-xs text-slate-400 py-2">
-          ✅ No syntax issues found. Your algorithm looks good!
+          ✅ No syntax issues found. Algorithm looks great!
         </div>
       ) : (
         <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
@@ -136,7 +136,7 @@ export function SyntaxChecker({ issues, onFix, isLoading, overallFeedback, corre
 
               return (
                 <motion.div
-                  key={`${issue.lineNumber}-${issue.type}-${index}`}
+                  key={`${issue.line}-${issue.type}-${index}`}
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -5 }}
@@ -152,19 +152,43 @@ export function SyntaxChecker({ issues, onFix, isLoading, overallFeedback, corre
                           {config.label}
                         </span>
                         <span className="text-[10px] text-slate-500">
-                          Line {issue.lineNumber}
+                          Line {issue.line}
                         </span>
                       </div>
 
-                      <p className="text-xs text-slate-200 mt-1">
-                        {issue.message}
+                      {/* Short English title */}
+                      <p className="text-sm font-semibold text-slate-100 mt-1">
+                        {issue.title}
                       </p>
 
-                      <p className="text-[10px] text-slate-400 mt-1 italic">
-                        💡 {issue.suggestion}
+                      {/* Why it is wrong (beginner English) */}
+                      <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                        {issue.explanation}
                       </p>
 
-                      {issue.fix && (
+                      {/* What the learner actually wrote */}
+                      {issue.originalLine && (
+                        <div className="mt-2 rounded-lg border border-rose-500/20 bg-slate-900/70 p-2">
+                          <span className="block text-[10px] font-bold uppercase tracking-wider text-rose-400">
+                            You wrote
+                          </span>
+                          <code className="block text-xs font-mono text-rose-200 whitespace-pre-wrap break-words">
+                            {issue.originalLine}
+                          </code>
+                        </div>
+                      )}
+
+                      {/* A correct example the learner can copy */}
+                      <div className="mt-1.5 rounded-lg border border-emerald-500/20 bg-slate-900/70 p-2">
+                        <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                          Correct example
+                        </span>
+                        <code className="block text-xs font-mono text-emerald-200 whitespace-pre-wrap break-words">
+                          {issue.example}
+                        </code>
+                      </div>
+
+                      {issue.fixedLine && (
                         <button
                           onClick={() => onFix(issue)}
                           className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 

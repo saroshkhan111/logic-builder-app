@@ -20,7 +20,7 @@ describe("AIGuideSidebar", () => {
 
     expect(screen.getByText("Step 1: Problem Statement")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Quiz shuru karo" })
+            screen.queryByRole("button", { name: "Start quiz" })
     ).not.toBeInTheDocument();
   });
 
@@ -31,7 +31,7 @@ describe("AIGuideSidebar", () => {
 
     expect(screen.getByText("Step 1: Quiz")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Quiz shuru karo" })
+            screen.getByRole("button", { name: "Start quiz" })
     ).toBeInTheDocument();
   });
 });

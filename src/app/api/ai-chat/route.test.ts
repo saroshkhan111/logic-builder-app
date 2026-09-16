@@ -15,7 +15,7 @@ function makeRequest(body: Record<string, unknown>): NextRequest {
 }
 
 const REQUEST_BODY = {
-  message: "Mere program mein even/odd check nahi chal raha",
+    message: "My even/odd program is not running.",
   currentStep: 1,
   problemStatement: "Check if a number is even or odd",
   inputs: ["number (string)"],
@@ -42,9 +42,9 @@ describe("POST /api/ai-chat", () => {
           {
             message: {
               content: JSON.stringify({
-                reply: "Modulo (%) se check karo: number % 2 == 0.",
+                                reply: "Use the modulo (%) operator: number % 2 == 0.",
                 correction:
-                  "Tumne string choose kiya. Par even/odd check karne ke liye integer chahiye. Isliye input integer hona chahiye.",
+                  "You chose a string. But even/odd needs an integer. The input must be an integer.",
               }),
             },
           },
@@ -56,9 +56,9 @@ describe("POST /api/ai-chat", () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.reply).toBe("Modulo (%) se check karo: number % 2 == 0.");
+        expect(data.reply).toBe("Use the modulo (%) operator: number % 2 == 0.");
     expect(data.correction).toBe(
-      "Tumne string choose kiya. Par even/odd check karne ke liye integer chahiye. Isliye input integer hona chahiye."
+      "You chose a string. But even/odd needs an integer. The input must be an integer."
     );
   });
 
@@ -69,7 +69,7 @@ describe("POST /api/ai-chat", () => {
         choices: [
           {
             message: {
-              content: JSON.stringify({ reply: "Bilkul sahi!", correction: "" }),
+                        content: JSON.stringify({ reply: "All correct!", correction: "" }),
             },
           },
         ],
@@ -79,12 +79,12 @@ describe("POST /api/ai-chat", () => {
     const response = await POST(makeRequest(REQUEST_BODY));
     const data = await response.json();
 
-    expect(data.reply).toBe("Bilkul sahi!");
+        expect(data.reply).toBe("All correct!");
     expect(data.correction).toBe("");
   });
 
   it("falls back to plain text with an empty correction", async () => {
-    const plainReply = "Input ko int() mein convert karo.";
+        const plainReply = "Convert the input to int().";
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({

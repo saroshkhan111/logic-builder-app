@@ -43,6 +43,7 @@ describe("extractTopLevelFunctions", () => {
     ]);
   });
 
+
   it("returns an empty array when there is no function", () => {
     expect(extractTopLevelFunctions("print('hi')")).toEqual([]);
   });
@@ -108,6 +109,10 @@ describe("isCalledAtTopLevel", () => {
 describe("parseInputTokens", () => {
   it("splits newline separated values", () => {
     expect(parseInputTokens("5\n3")).toEqual(["5", "3"]);
+  });
+
+  it("does not split list literals into multiple tokens", () => {
+    expect(parseInputTokens("[3, 1, 2, 5, 4]")).toEqual(["[3, 1, 2, 5, 4]"]);
   });
 
   it("splits a comma separated single line", () => {
