@@ -76,6 +76,10 @@ export interface OptimizationSuggestion {
 /** Benchmark result from code execution. */
 export interface BenchmarkResult {
   avgMs: number;
+  minMs: number;
+  maxMs: number;
   runs: number;
+  /** Name of the function that was timed (null for a plain script). */
+  function: string | null;
   timestamp: number;
 }

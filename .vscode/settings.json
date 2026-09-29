@@ -9,5 +9,6 @@
   "files.associations": {
     "*.css": "tailwindcss"
   },
-  "python.terminal.useEnvFile": true
+  "python.terminal.useEnvFile": true,
+  "CodeGPT.apiKey": "LM Studio"
 }

@@ -140,12 +140,12 @@ export const Step3Algorithm = () => {
                 .filter(Boolean),
               color: "indigo",
             },
-            { label: "Inputs", values: inputs, color: "indigo" },
-            { label: "Outputs", values: outputs, color: "emerald" },
-            { label: "Rules", values: rules, color: "amber" },
-            { label: "Required Data", values: requiredData, color: "indigo" },
-            { label: "Tools & Functions", values: toolsFunctions, color: "amber" },
-            { label: "Logical Concepts", values: logicalConcepts, color: "emerald" },
+            { label: "Inputs", values: inputs.map((i) => i.value), color: "indigo" },
+            { label: "Outputs", values: outputs.map((i) => i.value), color: "emerald" },
+            { label: "Rules", values: rules.map((i) => i.value), color: "amber" },
+            { label: "Required Data", values: requiredData.map((i) => i.value), color: "indigo" },
+            { label: "Tools & Functions", values: toolsFunctions.map((i) => i.value), color: "amber" },
+            { label: "Logical Concepts", values: logicalConcepts.map((i) => i.value), color: "emerald" },
           ]}
         />
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">

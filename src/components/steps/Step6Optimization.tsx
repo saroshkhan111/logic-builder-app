@@ -2,7 +2,7 @@
 
 import {
   CheckCircle2, Copy, Download, Gauge, Lightbulb, ListChecks,
-  Play, Plus, Save, Share2, Sparkles, Timer, TrendingUp, Wand2, Zap,
+  Play, Plus, Save, Share2, Sparkles, Timer, Trash2, TrendingUp, Wand2, Zap,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -10,13 +10,13 @@ import { StepFieldValidation } from "@/components/validation/StepFieldValidation
 import { ProjectsAPI } from "@/lib/api/projects";
 import { analyzeCodeComplexity, getComplexityColor } from "@/lib/complexityAnalyzer";
 import { generateOptimizationSuggestions, getSeverityStyles } from "@/lib/optimizationEngine";
-import { runPythonCode } from "@/lib/pyodide/runner";
+import { formatPythonValue, runPythonCode, selectFunctionDef } from "@/lib/pyodide/runner";
 import { isDefaultPythonCode, useLogicFlowStore } from "@/store/logicFlowStore";
 
 export const Step6Optimization = () => {
   const {
     setCurrentStep, problemStatement, inputs, outputs, algorithm, fileName,
-    pythonCode, optimizationRules, addOptimizationRule, reset,
+    pythonCode, optimizationRules, addOptimizationRule, removeOptimizationRule, reset,
     optimizationSuggestions, setOptimizationSuggestions, applySuggestion,
     complexityMetrics, setComplexityMetrics, benchmarkResult, setBenchmarkResult, testCases,
   } = useLogicFlowStore();
@@ -82,14 +82,30 @@ function guessArgValue(paramName: string, step1Inputs: string[]): string {
     setBenchmarkError(null);
     const runs = 10;
     let totalTime = 0;
+    let minMs = Infinity;
+    let maxMs = 0;
     let successCount = 0;
     try {
-      const funcMatch = pythonCode.match(/def\s+(\w+)\s*\(([^)]*)\)/);
-      const funcName = funcMatch ? funcMatch[1] : null;
-      const params = funcMatch && funcMatch[2] ? funcMatch[2].split(",").map((p) => p.trim()) : [];
-
-      // Generate test arguments based on parameter name
-      const testArgs = params.map(p => guessArgValue(p, inputs)).join(", ");
+      // Reuse the Step 5 runner's function picker so the benchmark times the
+      // same function the learner tests (also handles multiple functions).
+      const target = selectFunctionDef(pythonCode, inputs.length);
+      const funcName = target?.name ?? null;
+      const params = target?.params ?? [];
+      // Build sample args from the signature: prefer Step 1 inputs that already
+      // look like Python literals, otherwise infer a safe placeholder value.
+      const step1Values = inputs.map((i) => i.value).filter((v) => v.trim() !== "");
+      const testArgs = params
+        .map((p, i) => {
+          const step1 = step1Values[i];
+          if (step1) {
+            const asLiteral = formatPythonValue(step1);
+            // Keep it only when formatPythonValue recognised it as a real literal
+            // (number / list / dict / bool / quoted string), not a bare word.
+            if (asLiteral !== JSON.stringify(step1)) return asLiteral;
+          }
+          return guessArgValue(p, inputs.map((it) => it.value));
+        })
+        .join(", ");
 
       const codeToRun = funcName
         ? `${pythonCode}\nprint(${funcName}(${testArgs}))`
@@ -99,13 +115,23 @@ function guessArgValue(paramName: string, step1Inputs: string[]): string {
         const start = performance.now();
         const result = await runPythonCode(codeToRun);
         if (!result.error) {
-          totalTime += performance.now() - start;
+          const elapsed = performance.now() - start;
+          totalTime += elapsed;
+          if (elapsed < minMs) minMs = elapsed;
+          if (elapsed > maxMs) maxMs = elapsed;
           successCount++;
         }
       }
 
       if (successCount > 0) {
-        setBenchmarkResult({ avgMs: totalTime / successCount, runs: successCount, timestamp: Date.now() });
+        setBenchmarkResult({
+          avgMs: totalTime / successCount,
+          minMs,
+          maxMs,
+          runs: successCount,
+          function: funcName,
+          timestamp: Date.now(),
+        });
         setBenchmarkError(null);
             } else {
         // All 10 runs failed with Python errors — tell the user clearly
@@ -154,9 +180,9 @@ function guessArgValue(paramName: string, step1Inputs: string[]): string {
       const projectData = {
         title: problemStatement || "Untitled Project",
         problemStatement,
-        inputs,
-        outputs,
-        rules: optimizationRules,
+        inputs: inputs.map((i) => i.value),
+        outputs: outputs.map((o) => o.value),
+        rules: optimizationRules.map((r) => r.value),
         algorithm,
         pythonCode,
         testCases,
@@ -288,10 +314,47 @@ function guessArgValue(paramName: string, step1Inputs: string[]): string {
             <button onClick={handleRunBenchmark} disabled={isBenchmarking || !pythonCode} className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed">
               {isBenchmarking ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Running...</>) : (<><Play className="w-4 h-4" /> Run Benchmark</>)}
             </button>
+            {isBenchmarking && !benchmarkResult && (
+              <div className="flex items-center gap-2 bg-slate-950/60 p-3 rounded-xl text-[10px] text-slate-400">
+                <div className="w-3.5 h-3.5 border-2 border-slate-700 border-t-cyan-400 rounded-full animate-spin shrink-0" />
+                Timing your code… Pyodide loads on the first run.
+              </div>
+            )}
             {benchmarkResult && (
-              <div className="bg-slate-950/60 p-4 rounded-xl space-y-3">
-                <div className="flex items-center justify-between"><span className="text-xs text-slate-400">Avg</span><span className={`text-lg font-bold ${benchmarkResult.avgMs < 1 ? "text-emerald-400" : "text-amber-400"}`}>{benchmarkResult.avgMs.toFixed(3)} ms</span></div>
-                <div className="flex items-center gap-1 text-[10px] text-slate-500"><TrendingUp className="w-3 h-3" /> {benchmarkResult.runs} runs</div>
+              <div className="bg-slate-950/60 p-4 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Benchmarked</span>
+                  <span className="text-[10px] font-mono text-indigo-300">{benchmarkResult.function ?? "script"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Avg</span>
+                  <span className={`text-lg font-bold ${benchmarkResult.avgMs < 1 ? "text-emerald-400" : "text-amber-400"}`}>
+                    {typeof benchmarkResult.avgMs === 'number' ? benchmarkResult.avgMs.toFixed(3) : '0.000'} ms
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  <div className="bg-slate-900/60 rounded-lg p-2 text-center">
+                    <div className="text-sm font-bold text-emerald-400">
+                      {typeof benchmarkResult.minMs === 'number' ? benchmarkResult.minMs.toFixed(3) : '0.000'}
+                    </div>
+                    <div className="text-[9px] text-slate-500">min ms</div>
+                  </div>
+                  <div className="bg-slate-900/60 rounded-lg p-2 text-center">
+                    <div className="text-sm font-bold text-white">
+                      {typeof benchmarkResult.avgMs === 'number' ? benchmarkResult.avgMs.toFixed(3) : '0.000'}
+                    </div>
+                    <div className="text-[9px] text-slate-500">avg ms</div>
+                  </div>
+                  <div className="bg-slate-900/60 rounded-lg p-2 text-center">
+                    <div className="text-sm font-bold text-rose-400">
+                      {typeof benchmarkResult.maxMs === 'number' ? benchmarkResult.maxMs.toFixed(3) : '0.000'}
+                    </div>
+                    <div className="text-[9px] text-slate-500">max ms</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                  <TrendingUp className="w-3 h-3" /> {benchmarkResult.runs} runs completed
+                </div>
               </div>
             )}
             {benchmarkError && (
@@ -310,7 +373,7 @@ function guessArgValue(paramName: string, step1Inputs: string[]): string {
       <div className="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
         <div className="flex items-center gap-2 text-emerald-400 font-semibold text-xs"><Wand2 className="w-4 h-4" /> Optimization Rules</div>
         <div className="flex gap-2"><input type="text" value={ruleInput} onChange={(e) => setRuleInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddRule()} placeholder="Add a custom rule..." className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500" /><button onClick={handleAddRule} className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer"><Plus className="w-3.5 h-3.5" /> Add</button></div>
-        <div className="flex flex-wrap gap-2">{optimizationRules.map((rule, idx) => (<div key={idx} className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /><span className="text-slate-300">{rule}</span></div>))}</div>
+        <div className="flex flex-wrap gap-2">{optimizationRules.map((rule) => (<div key={rule.id} className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /><span className="text-slate-300">{rule.value}</span><button onClick={() => removeOptimizationRule(rule.id)} className="text-slate-500 hover:text-rose-400 cursor-pointer ml-1"><Trash2 className="w-3 h-3" /></button></div>))}</div>
       </div>
 
       {/* AI sequence check + navigation */}
@@ -321,7 +384,7 @@ function guessArgValue(paramName: string, step1Inputs: string[]): string {
           {
             key: "optimizationRules",
             label: "Optimization",
-            value: optimizationRules.join("; "),
+            value: optimizationRules.map((r) => r.value).join("; "),
           },
         ]}
         backLabel="Back to Step 5"

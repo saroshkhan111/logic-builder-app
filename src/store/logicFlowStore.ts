@@ -24,6 +24,35 @@ export interface TestCase {
   source?: TestSource;
 }
 
+/** A CRUD list item with a stable unique id (survives reorder/delete). */
+export interface IdValueItem {
+  id: string;
+  value: string;
+}
+
+/** Store fields persisted as `IdValueItem[]` (used by the persist migration). */
+const ID_LIST_FIELDS = [
+  "inputs",
+  "outputs",
+  "rules",
+  "requiredData",
+  "toolsFunctions",
+  "logicalConcepts",
+  "codeNotes",
+  "optimizationRules",
+] as const;
+
+/**
+ * Unique id for list items. Uses crypto.randomUUID when available and a
+ * timestamp+random fallback for non-secure contexts / older test runners.
+ */
+const createListItemId = (): string => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `item-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 interface LogicFlowState {
   // Navigation
   currentStep: number;
@@ -34,32 +63,32 @@ interface LogicFlowState {
   // Step 1 - Problem Statement
   problemStatement: string;
   setProblemStatement: (statement: string) => void;
-  inputs: string[];
-  addInputItem: (input: string) => void;
-  updateInputItem: (index: number, value: string) => void;
-  removeInputItem: (index: number) => void;
-  outputs: string[];
+  inputs: IdValueItem[];
+  addInputItem: (item: string) => void;
+  updateInputItem: (id: string, value: string) => void;
+  removeInputItem: (id: string) => void;
+  outputs: IdValueItem[];
   addOutputItem: (output: string) => void;
-  updateOutputItem: (index: number, value: string) => void;
-  removeOutputItem: (index: number) => void;
-  rules: string[];
+  updateOutputItem: (id: string, value: string) => void;
+  removeOutputItem: (id: string) => void;
+  rules: IdValueItem[];
   addRule: (item: string) => void;
-  updateRule: (index: number, value: string) => void;
-  removeRule: (index: number) => void;
+  updateRule: (id: string, value: string) => void;
+  removeRule: (id: string) => void;
 
   // Step 2 - Requirements
-  requiredData: string[];
+  requiredData: IdValueItem[];
   addRequiredData: (item: string) => void;
-  updateRequiredData: (index: number, value: string) => void;
-  removeRequiredData: (index: number) => void;
-  toolsFunctions: string[];
+  updateRequiredData: (id: string, value: string) => void;
+  removeRequiredData: (id: string) => void;
+  toolsFunctions: IdValueItem[];
   addToolsFunction: (item: string) => void;
-  updateToolsFunction: (index: number, value: string) => void;
-  removeToolsFunction: (index: number) => void;
-  logicalConcepts: string[];
+  updateToolsFunction: (id: string, value: string) => void;
+  removeToolsFunction: (id: string) => void;
+  logicalConcepts: IdValueItem[];
   addLogicalConcept: (item: string) => void;
-  updateLogicalConcept: (index: number, value: string) => void;
-  removeLogicalConcept: (index: number) => void;
+  updateLogicalConcept: (id: string, value: string) => void;
+  removeLogicalConcept: (id: string) => void;
 
   // Step 3 - Algorithm
   algorithm: string;
@@ -75,10 +104,10 @@ interface LogicFlowState {
   setFileName: (name: string) => void;
   pythonCode: string;
   setPythonCode: (code: string) => void;
-  codeNotes: string[];
+  codeNotes: IdValueItem[];
   addCodeNote: (item: string) => void;
-  updateCodeNote: (index: number, value: string) => void;
-  removeCodeNote: (index: number) => void;
+  updateCodeNote: (id: string, value: string) => void;
+  removeCodeNote: (id: string) => void;
 
   // Step 5 - Testing
   testCases: TestCase[];
@@ -94,10 +123,10 @@ interface LogicFlowState {
   setIsTesting: (isTesting: boolean) => void;
 
   // Step 6 - Optimization
-  optimizationRules: string[];
+  optimizationRules: IdValueItem[];
   addOptimizationRule: (item: string) => void;
-  updateOptimizationRule: (index: number, value: string) => void;
-  removeOptimizationRule: (index: number) => void;
+  updateOptimizationRule: (id: string, value: string) => void;
+  removeOptimizationRule: (id: string) => void;
   optimizationSuggestions: OptimizationSuggestion[];
   setOptimizationSuggestions: (suggestions: OptimizationSuggestion[]) => void;
   applySuggestion: (id: string) => void;
@@ -133,80 +162,96 @@ export const useLogicFlowStore = create<LogicFlowState>()(
   problemStatement: "",
   setProblemStatement: (statement) => set({ problemStatement: statement }),
   inputs: [],
-  addInputItem: (input) =>
-    set((state) => ({ inputs: [...state.inputs, input] })),
-  updateInputItem: (index, value) =>
+  addInputItem: (item) =>
     set((state) => ({
-      inputs: state.inputs.map((item, i) => (i === index ? value : item)),
+      inputs: [...state.inputs, { id: createListItemId(), value: item }],
     })),
-  removeInputItem: (index) =>
+  updateInputItem: (id, value) =>
     set((state) => ({
-      inputs: state.inputs.filter((_, i) => i !== index),
+      inputs: state.inputs.map((item) =>
+        item.id === id ? { ...item, value } : item
+      ),
+    })),
+  removeInputItem: (id) =>
+    set((state) => ({
+      inputs: state.inputs.filter((item) => item.id !== id),
     })),
   outputs: [],
   addOutputItem: (output) =>
-    set((state) => ({ outputs: [...state.outputs, output] })),
-  updateOutputItem: (index, value) =>
     set((state) => ({
-      outputs: state.outputs.map((item, i) => (i === index ? value : item)),
+      outputs: [...state.outputs, { id: createListItemId(), value: output }],
     })),
-  removeOutputItem: (index) =>
+  updateOutputItem: (id, value) =>
     set((state) => ({
-      outputs: state.outputs.filter((_, i) => i !== index),
+      outputs: state.outputs.map((item) =>
+        item.id === id ? { ...item, value } : item
+      ),
+    })),
+  removeOutputItem: (id) =>
+    set((state) => ({
+      outputs: state.outputs.filter((item) => item.id !== id),
     })),
   rules: [],
   addRule: (item) =>
-    set((state) => ({ rules: [...state.rules, item] })),
-  updateRule: (index, value) =>
     set((state) => ({
-      rules: state.rules.map((item, i) =>
-        i === index ? value : item
+      rules: [...state.rules, { id: createListItemId(), value: item }],
+    })),
+  updateRule: (id, value) =>
+    set((state) => ({
+      rules: state.rules.map((item) =>
+        item.id === id ? { ...item, value } : item
       ),
     })),
-  removeRule: (index) =>
+  removeRule: (id) =>
     set((state) => ({
-      rules: state.rules.filter((_, i) => i !== index),
+      rules: state.rules.filter((item) => item.id !== id),
     })),
 
   // Step 2 - Requirements
   requiredData: [],
   addRequiredData: (item) =>
-    set((state) => ({ requiredData: [...state.requiredData, item] })),
-  updateRequiredData: (index, value) =>
     set((state) => ({
-      requiredData: state.requiredData.map((item, i) =>
-        i === index ? value : item
+      requiredData: [...state.requiredData, { id: createListItemId(), value: item }],
+    })),
+  updateRequiredData: (id, value) =>
+    set((state) => ({
+      requiredData: state.requiredData.map((item) =>
+        item.id === id ? { ...item, value } : item
       ),
     })),
-  removeRequiredData: (index) =>
+  removeRequiredData: (id) =>
     set((state) => ({
-      requiredData: state.requiredData.filter((_, i) => i !== index),
+      requiredData: state.requiredData.filter((item) => item.id !== id),
     })),
   toolsFunctions: [],
   addToolsFunction: (item) =>
-    set((state) => ({ toolsFunctions: [...state.toolsFunctions, item] })),
-  updateToolsFunction: (index, value) =>
     set((state) => ({
-      toolsFunctions: state.toolsFunctions.map((item, i) =>
-        i === index ? value : item
+      toolsFunctions: [...state.toolsFunctions, { id: createListItemId(), value: item }],
+    })),
+  updateToolsFunction: (id, value) =>
+    set((state) => ({
+      toolsFunctions: state.toolsFunctions.map((item) =>
+        item.id === id ? { ...item, value } : item
       ),
     })),
-  removeToolsFunction: (index) =>
+  removeToolsFunction: (id) =>
     set((state) => ({
-      toolsFunctions: state.toolsFunctions.filter((_, i) => i !== index),
+      toolsFunctions: state.toolsFunctions.filter((item) => item.id !== id),
     })),
   logicalConcepts: [],
   addLogicalConcept: (item) =>
-    set((state) => ({ logicalConcepts: [...state.logicalConcepts, item] })),
-  updateLogicalConcept: (index, value) =>
     set((state) => ({
-      logicalConcepts: state.logicalConcepts.map((item, i) =>
-        i === index ? value : item
+      logicalConcepts: [...state.logicalConcepts, { id: createListItemId(), value: item }],
+    })),
+  updateLogicalConcept: (id, value) =>
+    set((state) => ({
+      logicalConcepts: state.logicalConcepts.map((item) =>
+        item.id === id ? { ...item, value } : item
       ),
     })),
-  removeLogicalConcept: (index) =>
+  removeLogicalConcept: (id) =>
     set((state) => ({
-      logicalConcepts: state.logicalConcepts.filter((_, i) => i !== index),
+      logicalConcepts: state.logicalConcepts.filter((item) => item.id !== id),
     })),
 
   // Step 3 - Algorithm
@@ -234,16 +279,18 @@ export const useLogicFlowStore = create<LogicFlowState>()(
   setPythonCode: (code) => set({ pythonCode: code }),
   codeNotes: [],
   addCodeNote: (item) =>
-    set((state) => ({ codeNotes: [...state.codeNotes, item] })),
-  updateCodeNote: (index, value) =>
     set((state) => ({
-      codeNotes: state.codeNotes.map((item, i) =>
-        i === index ? value : item
+      codeNotes: [...state.codeNotes, { id: createListItemId(), value: item }],
+    })),
+  updateCodeNote: (id, value) =>
+    set((state) => ({
+      codeNotes: state.codeNotes.map((item) =>
+        item.id === id ? { ...item, value } : item
       ),
     })),
-  removeCodeNote: (index) =>
+  removeCodeNote: (id) =>
     set((state) => ({
-      codeNotes: state.codeNotes.filter((_, i) => i !== index),
+      codeNotes: state.codeNotes.filter((item) => item.id !== id),
     })),
 
   // Step 5 - Testing
@@ -272,16 +319,23 @@ export const useLogicFlowStore = create<LogicFlowState>()(
   // Step 6 - Optimization
   optimizationRules: [],
   addOptimizationRule: (item) =>
-    set((state) => ({ optimizationRules: [...state.optimizationRules, item] })),
-  updateOptimizationRule: (index, value) =>
     set((state) => ({
-      optimizationRules: state.optimizationRules.map((item, i) =>
-        i === index ? value : item
+      optimizationRules: [
+        ...state.optimizationRules,
+        { id: createListItemId(), value: item },
+      ],
+    })),
+  updateOptimizationRule: (id, value) =>
+    set((state) => ({
+      optimizationRules: state.optimizationRules.map((item) =>
+        item.id === id ? { ...item, value } : item
       ),
     })),
-  removeOptimizationRule: (index) =>
+  removeOptimizationRule: (id) =>
     set((state) => ({
-      optimizationRules: state.optimizationRules.filter((_, i) => i !== index),
+      optimizationRules: state.optimizationRules.filter(
+        (item) => item.id !== id
+      ),
     })),
   optimizationSuggestions: [],
   setOptimizationSuggestions: (suggestions) => set({ optimizationSuggestions: suggestions }),
@@ -355,6 +409,25 @@ export const useLogicFlowStore = create<LogicFlowState>()(
     }),
     {
       name: 'logic-builder-storage',
+      version: 1,
+      // v1: CRUD list fields changed from string[] to { id, value }[] —
+      // upgrade previously saved plain-string lists so old saves keep working.
+      migrate: (persistedState, version) => {
+        const state = persistedState as Record<string, unknown> | undefined;
+        if (version === 0 && state) {
+          for (const field of ID_LIST_FIELDS) {
+            const list = state[field];
+            if (Array.isArray(list)) {
+              state[field] = (list as Array<string | IdValueItem>).map((item) =>
+                typeof item === "string"
+                  ? { id: createListItemId(), value: item }
+                  : item
+              );
+            }
+          }
+        }
+        return state as unknown as LogicFlowState;
+      },
     },
   ),
 );

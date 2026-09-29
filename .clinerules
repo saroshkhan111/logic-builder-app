@@ -1,0 +1,23 @@
+## CRITICAL: XML Format Rules
+
+1. ALWAYS put each XML tag on a NEW LINE
+2. NEVER combine tags on one line
+
+### WRONG (Cline ignores this):
+<execute_command> <command>python hello.py</command> </execute_command>
+
+### RIGHT (Cline executes this):
+<execute_command>
+<command>python hello.py</command>
+</execute_command>
+
+### Same for write_to_file:
+WRONG: <write_to_file> <path>x.py</path> <content>...</content> </write_to_file>
+
+RIGHT:
+<write_to_file>
+<path>x.py</path>
+<content>
+...
+</content>
+</write_to_file>

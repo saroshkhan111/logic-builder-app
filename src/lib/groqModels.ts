@@ -50,7 +50,7 @@ export async function callGroqWithFallback(params: {
       clearTimeout(timeout);
 
       if (response.status === 429) {
-        errors.push(`${model}: rate limited`);
+        errors.push(`${model}: 429 rate limited`);
         continue;
       }
       if (!response.ok) {
@@ -73,5 +73,6 @@ export async function callGroqWithFallback(params: {
     }
   }
 
+  console.log("[GROQ] All models failed. Errors:", errors);
   throw new Error(`All Groq models failed:\n${errors.join("\n")}`);
 }

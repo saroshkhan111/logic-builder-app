@@ -31,7 +31,7 @@ export const Step4Code = () => {
   } = useLogicFlowStore();
 
   const [noteInput, setNoteInput] = useState("");
-  const [editingNoteIdx, setEditingNoteIdx] = useState<number | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteValue, setEditNoteValue] = useState("");
   const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null);
   const [showDryRun, setShowDryRun] = useState(false);
@@ -41,7 +41,13 @@ export const Step4Code = () => {
 
   // Smart file name suggestions
   const suggestedNames = useMemo(
-    () => suggestFileNames(problemStatement, pythonCode, inputs, outputs),
+    () =>
+      suggestFileNames(
+        problemStatement,
+        pythonCode,
+        inputs.map((i) => i.value),
+        outputs.map((o) => o.value)
+      ),
     [problemStatement, pythonCode, inputs, outputs]
   );
 
@@ -85,12 +91,12 @@ export const Step4Code = () => {
                 .filter(Boolean),
               color: "indigo",
             },
-            { label: "Inputs", values: inputs, color: "indigo" },
-            { label: "Outputs", values: outputs, color: "emerald" },
-            { label: "Rules", values: rules, color: "amber" },
-            { label: "Required Data", values: requiredData, color: "indigo" },
-            { label: "Tools & Functions", values: toolsFunctions, color: "amber" },
-            { label: "Logical Concepts", values: logicalConcepts, color: "emerald" },
+            { label: "Inputs", values: inputs.map((i) => i.value), color: "indigo" },
+            { label: "Outputs", values: outputs.map((o) => o.value), color: "emerald" },
+            { label: "Rules", values: rules.map((r) => r.value), color: "amber" },
+            { label: "Required Data", values: requiredData.map((d) => d.value), color: "indigo" },
+            { label: "Tools & Functions", values: toolsFunctions.map((t) => t.value), color: "amber" },
+            { label: "Logical Concepts", values: logicalConcepts.map((l) => l.value), color: "emerald" },
             {
               label: "Algorithm",
               values: algorithm
@@ -207,7 +213,7 @@ export const Step4Code = () => {
                   }`}
                 >
                   <div className="flex items-start gap-2">
-                    <span className="text-[10px] font-mono text-slate-500 min-w-[20px] text-right pt-0.5">
+                    <span className="text-[10px] font-mono text-slate-500 min-w-5 text-right pt-0.5">
                       {step.lineNumber}
                     </span>
                     <div className="flex-1 min-w-0">
@@ -292,31 +298,43 @@ export const Step4Code = () => {
             </button>
           </div>
           <div className="space-y-1.5 pt-1">
-            {codeNotes.map((item, idx) =>
-              editingNoteIdx === idx ? (
+            {codeNotes.map((item) =>
+              editingNoteId === item.id ? (
                 <div
-                  key={idx}
+                  key={item.id}
                   className="flex items-center gap-1 bg-slate-900 border border-violet-500 rounded-lg p-1 text-xs"
                 >
                   <input
                     type="text"
                     value={editNoteValue}
                     onChange={(e) => setEditNoteValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        if (editNoteValue.trim()) {
+                          updateCodeNote(item.id, editNoteValue.trim());
+                        }
+                        setEditingNoteId(null);
+                      }
+                      if (e.key === "Escape") setEditingNoteId(null);
+                    }}
+                    autoFocus
                     className="bg-transparent text-slate-100 text-xs focus:outline-none px-1 flex-1"
                   />
                   <button
+                    type="button"
                     onClick={() => {
                       if (editNoteValue.trim()) {
-                        updateCodeNote(idx, editNoteValue.trim());
+                        updateCodeNote(item.id, editNoteValue.trim());
                       }
-                      setEditingNoteIdx(null);
+                      setEditingNoteId(null);
                     }}
                     className="text-emerald-400 hover:text-emerald-300 p-0.5 cursor-pointer"
                   >
                     <Check className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => setEditingNoteIdx(null)}
+                    type="button"
+                    onClick={() => setEditingNoteId(null)}
                     className="text-slate-400 hover:text-slate-300 p-0.5 cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -324,14 +342,15 @@ export const Step4Code = () => {
                 </div>
               ) : (
                 <div
-                  key={idx}
+                  key={item.id}
                   className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs"
                 >
-                  <span className="text-violet-300 flex-1">{item}</span>
+                  <span className="text-violet-300 flex-1">{item.value}</span>
                   <button
+                    type="button"
                     onClick={() => {
-                      setEditingNoteIdx(idx);
-                      setEditNoteValue(item);
+                      setEditingNoteId(item.id);
+                      setEditNoteValue(item.value);
                     }}
                     className="text-violet-400 hover:text-white transition-colors cursor-pointer"
                     title="Edit Note"
@@ -339,7 +358,8 @@ export const Step4Code = () => {
                     <Edit2 className="w-3 h-3" />
                   </button>
                   <button
-                    onClick={() => removeCodeNote(idx)}
+                    type="button"
+                    onClick={() => removeCodeNote(item.id)}
                     className="text-violet-400 hover:text-rose-400 transition-colors cursor-pointer"
                     title="Delete Note"
                   >
@@ -361,7 +381,7 @@ export const Step4Code = () => {
             {
               key: "codeNotes",
               label: "Code Notes",
-              value: codeNotes.join("; "),
+              value: codeNotes.map((n) => n.value).join("; "),
             },
           ]}
           backLabel="Back to Step 3"

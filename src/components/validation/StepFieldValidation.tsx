@@ -287,9 +287,10 @@ export function StepFieldValidation({
   });
 const activeHint = rows[activeIndex]?.hint ?? "";
   const hasNextField = activeIndex !== -1 && activeIndex < fields.length - 1;
+  const blockingIndex = blockingField ? fields.indexOf(blockingField) : -1;
   const headerBadge = isBlocked
-    ? `Field ${Math.min(activeIndex + 1, fields.length)}/${fields.length}`
-        : "All correct";
+    ? `Fix ${blockingIndex + 1}/${fields.length}: ${blockingField!.label}`
+    : "All correct";
 
   return (
     <div className="space-y-3">
@@ -340,6 +341,12 @@ const activeHint = rows[activeIndex]?.hint ?? "";
                                     {row.status === "correct" ? "✅ Correct" : config.label}
                       </span>
                     </div>
+
+                    {row.field.value.trim() !== "" && (
+                      <p className="mt-1 truncate rounded bg-slate-950/50 px-2 py-1 font-mono text-[10px] text-slate-400">
+                        {row.field.value.trim()}
+                      </p>
+                    )}
 
                     {row.detail && (
                       <p className="text-xs text-slate-200 mt-1 leading-relaxed">

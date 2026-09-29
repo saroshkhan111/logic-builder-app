@@ -87,9 +87,9 @@ export const Step5Testing = () => {
 
     try {
       const { testCases: generated, warnings } = await generateTestCases(
-        inputs,
-        outputs,
-        rules,
+        inputs.map((i) => i.value),
+        outputs.map((o) => o.value),
+        rules.map((r) => r.value),
         problemStatement,
         pythonCode,
         useCodeOutputAsExpected
@@ -232,12 +232,12 @@ export const Step5Testing = () => {
                 .filter(Boolean),
               color: "indigo",
             },
-            { label: "Inputs", values: inputs, color: "indigo" },
-            { label: "Outputs", values: outputs, color: "emerald" },
-            { label: "Rules", values: rules, color: "amber" },
-            { label: "Required Data", values: requiredData, color: "indigo" },
-            { label: "Tools & Functions", values: toolsFunctions, color: "amber" },
-            { label: "Logical Concepts", values: logicalConcepts, color: "emerald" },
+            { label: "Inputs", values: inputs.map((i) => i.value), color: "indigo" },
+            { label: "Outputs", values: outputs.map((o) => o.value), color: "emerald" },
+            { label: "Rules", values: rules.map((r) => r.value), color: "amber" },
+            { label: "Required Data", values: requiredData.map((d) => d.value), color: "indigo" },
+            { label: "Tools & Functions", values: toolsFunctions.map((t) => t.value), color: "amber" },
+            { label: "Logical Concepts", values: logicalConcepts.map((c) => c.value), color: "emerald" },
             {
               label: "Algorithm",
               values: algorithm
@@ -247,7 +247,7 @@ export const Step5Testing = () => {
               color: "sky",
             },
             { label: "File Name", values: [fileName], color: "sky" },
-            { label: "Code Notes", values: codeNotes, color: "violet" },
+            { label: "Code Notes", values: codeNotes.map((n) => n.value), color: "violet" },
           ]}
         />
         {autoGenWarning && (
@@ -303,7 +303,7 @@ export const Step5Testing = () => {
 
         <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
           <label className="text-xs font-semibold text-slate-300 block">Add New Test Case</label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 [&>*]:min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 *:min-w-0">
             <div className="space-y-1.5">
               <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Test Name</label>
               <input
@@ -386,6 +386,11 @@ export const Step5Testing = () => {
                             type="text"
                             value={editTcValues.name}
                             onChange={(e) => setEditTcValues({ ...editTcValues, name: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveTcEdit();
+                              if (e.key === "Escape") setEditingTcId(null);
+                            }}
+                            autoFocus
                             className="w-full bg-slate-900 border border-cyan-500 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
                           />
                         </td>
@@ -394,6 +399,10 @@ export const Step5Testing = () => {
                             type="text"
                             value={editTcValues.input}
                             onChange={(e) => setEditTcValues({ ...editTcValues, input: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveTcEdit();
+                              if (e.key === "Escape") setEditingTcId(null);
+                            }}
                             className="w-full bg-slate-900 border border-cyan-500 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
                           />
                         </td>
@@ -402,6 +411,10 @@ export const Step5Testing = () => {
                             type="text"
                             value={editTcValues.expectedOutput}
                             onChange={(e) => setEditTcValues({ ...editTcValues, expectedOutput: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveTcEdit();
+                              if (e.key === "Escape") setEditingTcId(null);
+                            }}
                             className="w-full bg-slate-900 border border-cyan-500 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none"
                           />
                         </td>
@@ -409,6 +422,7 @@ export const Step5Testing = () => {
                         <td className="p-2">
                           <div className="flex gap-1">
                             <button
+                              type="button"
                               onClick={handleSaveTcEdit}
                               className="text-emerald-400 hover:text-emerald-300 p-1 cursor-pointer"
                               title="Save"
@@ -416,6 +430,7 @@ export const Step5Testing = () => {
                               <Check className="w-3.5 h-3.5" />
                             </button>
                             <button
+                              type="button"
                               onClick={() => setEditingTcId(null)}
                               className="text-slate-400 hover:text-slate-300 p-1 cursor-pointer"
                               title="Cancel"
@@ -462,6 +477,7 @@ export const Step5Testing = () => {
                         <td className="p-3.5">
                           <div className="flex gap-1">
                             <button
+                              type="button"
                               onClick={() => {
                                 setEditingTcId(tc.id);
                                 setEditTcValues({ name: tc.name, input: tc.input, expectedOutput: tc.expectedOutput });
@@ -472,6 +488,7 @@ export const Step5Testing = () => {
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
+                              type="button"
                               onClick={() => removeTestCase(tc.id)}
                               className="text-cyan-400 hover:text-rose-400 p-1 cursor-pointer transition-colors"
                               title="Delete Test Case"

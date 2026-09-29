@@ -47,14 +47,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      // Browser extensions (e.g. the "data-copygoat-attached" attribute) mutate
+      // <html> before React hydrates. React only controls the attributes it
+      // renders, so this tells it to skip validating <html>'s attribute list
+      // instead of reporting a hydration mismatch for third-party injections.
+      suppressHydrationWarning
+    >
       <head>
         <Script
           src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"
           strategy="beforeInteractive"
         />
       </head>
-      <body className="min-h-screen bg-background text-foreground font-sans antialiased">
+      <body className="bg-background text-foreground min-h-screen font-sans antialiased">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
